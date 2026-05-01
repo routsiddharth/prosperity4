@@ -1,0 +1,56 @@
+====================================================================================================
+STRATEGY PERFORMANCE REPORT — Current trader.py
+====================================================================================================
+
+BACKTEST RESULTS (--merge-pnl across 3 days)
+────────────────────────────────────────────────────────────
+  Day -2:  ACO +12,742   IPR +76,944   Total  +89,686
+  Day -1:  ACO +14,534   IPR +76,347   Total  +90,881
+  Day  0:  ACO +12,891   IPR +75,187   Total  +88,078
+  ────────────────────────────────────────────────────
+  TOTAL:   ACO +40,167   IPR +228,478  TOTAL +268,645
+
+  Sharpe:          63.66
+  Ann. Sharpe:  1,010.65
+  Sortino:         inf (no negative returns)
+  Max DD abs:  1,203,564
+  Max DD %:        3.96%
+  Target:        200,000  ✓ EXCEEDED
+
+ACO FILL STATISTICS
+────────────────────────────────────────────────────────────
+  Total fills:     1101
+  Buy fills:       553 (2844 units, avg 9993.0)
+  Sell fills:      548 (2816 units, avg 10007.2)
+  Net position:    +28
+  Fill rate:       3.67% of ticks
+  Position trajectory:
+    day -2:    0 →   12  (min -28, max 26)
+    day -1:   12 →   36  (min -15, max 37)
+    day 0:   36 →   28  (min 7, max 62)
+
+IPR FILL STATISTICS
+────────────────────────────────────────────────────────────
+  Total fills:     49
+  Buy fills:       49 (240 units, avg 11047.8)
+  Sell fills:      0
+  Net position:    +240
+  Fill rate:       0.16% of ticks
+  Position trajectory:
+    day -2:    0 →   80  (min 0, max 80)
+    day -1:   80 →  160  (min 80, max 160)
+    day 0:  160 →  240  (min 160, max 240)
+
+STRATEGY LOGIC
+────────────────────────────────────────────────────────────
+  IPR (trend-follow):
+    • Buy-only: penny the best bid (best_bid + 1)
+    • Never sell — ride the ~1,000/day linear uptrend
+    • Size: full remaining capacity (limit − position)
+
+  ACO (market-make):
+    • Neutral zone (|pos| < 20): quote both sides
+      Bid @ best_bid + 1, Ask @ best_ask − 1
+    • Overbought (pos ≥ 20): sell-only @ best_ask − 1
+    • Oversold (pos ≤ −20): buy-only @ best_bid + 1
+    • Size: full remaining capacity each side

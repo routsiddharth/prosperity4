@@ -1,0 +1,1314 @@
+
+================================================================================
+>>> CELL   3: import math
+================================================================================
+Group: Drinks (Oxygen Shakes)  (5 products)
+  - OXYGEN_SHAKE_MORNING_BREATH
+  - OXYGEN_SHAKE_EVENING_BREATH
+  - OXYGEN_SHAKE_MINT
+  - OXYGEN_SHAKE_CHOCOLATE
+  - OXYGEN_SHAKE_GARLIC
+
+================================================================================
+>>> CELL   4: # ─── stat helpers ───
+================================================================================
+
+================================================================================
+>>> CELL   6: import re
+================================================================================
+Loaded 150,000 rows across days [np.int64(2), np.int64(3), np.int64(4)]
+
+Aligned panel: T = 30,000 ticks × P = 5 products
+
+=== Per-product summary ===
+                                  mean      std     min      max  ret_std
+product                                                                  
+OXYGEN_SHAKE_MORNING_BREATH  10000.453  652.794  8631.5  11377.5   10.100
+OXYGEN_SHAKE_EVENING_BREATH   9271.895  399.815  8277.5  10300.0   10.983
+OXYGEN_SHAKE_MINT             9838.394  508.123  8422.5  10817.0    9.883
+OXYGEN_SHAKE_CHOCOLATE        9556.879  560.592  8760.0  11200.0   10.890
+OXYGEN_SHAKE_GARLIC          11925.640  953.333  9616.0  14126.0   12.014
+
+================================================================================
+>>> CELL   7: # Raw mid-price plot — separate panels because absolute scales may differ
+================================================================================
+
+================================================================================
+>>> CELL   9: corr_level    = mid_aligned.corr(method="pearson")
+================================================================================
+=== All 10 pairs sorted by joint score ===
+                             a                            b  pearson_level  pearson_ret  spearman_ret  kendall_ret  abs_level  abs_ret  joint_score  par_minus_spear
+3  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC        -0.5579       0.0130        0.0113       0.0034     0.5579   0.0130       0.0852           0.0017
+9       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC         0.6458       0.0068        0.0092      -0.0047     0.6458   0.0068       0.0662           0.0025
+0  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH        -0.3216       0.0088        0.0173       0.0232     0.3216   0.0088       0.0532           0.0084
+1  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT         0.2409       0.0072        0.0067       0.0068     0.2409   0.0072       0.0415           0.0004
+4  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT        -0.3053       0.0054        0.0104       0.0062     0.3053   0.0054       0.0406           0.0050
+7            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE        -0.2468       0.0066        0.0092       0.0161     0.2468   0.0066       0.0405           0.0026
+2  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE        -0.3469       0.0032        0.0024      -0.0054     0.3469   0.0032       0.0332           0.0007
+5  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE         0.1138       0.0092        0.0151       0.0126     0.1138   0.0092       0.0323           0.0059
+8            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC        -0.3210       0.0032        0.0028       0.0051     0.3210   0.0032       0.0320           0.0004
+6  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC        -0.1358       0.0070        0.0122       0.0080     0.1358   0.0070       0.0307           0.0052
+
+=== Pairs where Pearson(ret) and Spearman(ret) DISAGREE most ===
+                             a                            b  pearson_level  pearson_ret  spearman_ret  kendall_ret  abs_level  abs_ret  joint_score  par_minus_spear
+0  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH        -0.3216       0.0088        0.0173       0.0232     0.3216   0.0088       0.0532           0.0084
+5  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE         0.1138       0.0092        0.0151       0.0126     0.1138   0.0092       0.0323           0.0059
+6  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC        -0.1358       0.0070        0.0122       0.0080     0.1358   0.0070       0.0307           0.0052
+4  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT        -0.3053       0.0054        0.0104       0.0062     0.3053   0.0054       0.0406           0.0050
+7            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE        -0.2468       0.0066        0.0092       0.0161     0.2468   0.0066       0.0405           0.0026
+
+================================================================================
+>>> CELL  10: # Pairwise scatter matrix on returns — visual sanity check for non-linear / heavy-tailed s
+================================================================================
+
+================================================================================
+>>> CELL  12: win = min(WINDOW_ROLLING, max(500, T // 20))
+================================================================================
+Rolling Pearson(returns) summary, window=1500 ticks:
+                             a                            b   mean    std    min    max  frac_above_0.5  frac_above_0.3
+0  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH  0.009  0.019 -0.056  0.062             0.0             0.0
+1  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT  0.008  0.019 -0.043  0.062             0.0             0.0
+2  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE  0.003  0.022 -0.062  0.052             0.0             0.0
+3  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC  0.013  0.027 -0.061  0.081             0.0             0.0
+4  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT  0.004  0.025 -0.069  0.074             0.0             0.0
+5  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE  0.008  0.023 -0.064  0.073             0.0             0.0
+6  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC  0.006  0.025 -0.064  0.071             0.0             0.0
+7            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE  0.009  0.024 -0.058  0.078             0.0             0.0
+8            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC  0.004  0.021 -0.058  0.066             0.0             0.0
+9       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC  0.007  0.023 -0.047  0.072             0.0             0.0
+
+================================================================================
+>>> CELL  14: lags = list(range(-MAX_LAG_LEAD, MAX_LAG_LEAD + 1))
+================================================================================
+=== Lead-lag summary (returns), peak |corr| within ±50 ticks ===
+                             a                            b  corr_at_0  peak_corr  peak_abs  peak_lag                                                      interpretation
+4  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT     0.0054     0.0226    0.0226        18           OXYGEN_SHAKE_EVENING_BREATH leads OXYGEN_SHAKE_MINT by 18
+0  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH     0.0088    -0.0190    0.0190         5  OXYGEN_SHAKE_MORNING_BREATH leads OXYGEN_SHAKE_EVENING_BREATH by 5
+2  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE     0.0032     0.0181    0.0181       -19      OXYGEN_SHAKE_CHOCOLATE leads OXYGEN_SHAKE_MORNING_BREATH by 19
+3  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC     0.0130    -0.0176    0.0176        49         OXYGEN_SHAKE_MORNING_BREATH leads OXYGEN_SHAKE_GARLIC by 49
+8            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC     0.0032    -0.0175    0.0175        28                   OXYGEN_SHAKE_MINT leads OXYGEN_SHAKE_GARLIC by 28
+1  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT     0.0072     0.0165    0.0165        29           OXYGEN_SHAKE_MORNING_BREATH leads OXYGEN_SHAKE_MINT by 29
+6  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC     0.0070    -0.0163    0.0163        -1          OXYGEN_SHAKE_GARLIC leads OXYGEN_SHAKE_EVENING_BREATH by 1
+9       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC     0.0068     0.0161    0.0161        23              OXYGEN_SHAKE_CHOCOLATE leads OXYGEN_SHAKE_GARLIC by 23
+5  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE     0.0092    -0.0161    0.0161        40      OXYGEN_SHAKE_EVENING_BREATH leads OXYGEN_SHAKE_CHOCOLATE by 40
+7            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE     0.0066     0.0137    0.0137       -30                OXYGEN_SHAKE_CHOCOLATE leads OXYGEN_SHAKE_MINT by 30
+
+================================================================================
+>>> CELL  16: COINT_MAXLAG = 5
+================================================================================
+=== All pairs by EG p-value ===
+                             a                            b  hedge_ratio  level_corr  resid_std_ratio    eg_p   adf_p  half_life
+0       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC       0.3798      0.6458           0.7635  0.1300  0.0439  1418.5075
+1  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT      -0.2402     -0.3053           0.9523  0.2292  0.0893  1390.9551
+2  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE       0.0812      0.1138           0.9935  0.3175  0.1402  1595.5203
+3  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC      -0.0569     -0.1358           0.9907  0.3770  0.1786  1651.6984
+4  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC      -0.3820     -0.5579           0.8299  0.5371  0.3097  2919.4694
+5            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE      -0.2237     -0.2468           0.9691  0.7023  0.4666  3532.1981
+6            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC      -0.1711     -0.3210           0.9471  0.7224  0.4970  3615.3866
+7  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH      -0.5251     -0.3216           0.9469  0.7474  0.5341  3879.2962
+8  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE      -0.4039     -0.3469           0.9379  0.7506  0.5404  4235.4820
+9  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT       0.3094      0.2409           0.9706  0.8292  0.6572  5509.6259
+
+================================================================================
+>>> CELL  18: int_grid = [k for k in range(INT_COEF_MIN, INT_COEF_MAX + 1) if k != 0]
+================================================================================
+=== Integer-hedge pairs by ADF p ===
+                             a                            b   ols_h  int_h  ols_resid_std_ratio  int_resid_std_ratio  int_resid_inflation  int_adf_p  int_half_life
+0       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC  0.3798      1               0.7635               1.3021               1.7054     0.0268      1731.1019
+1  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT -0.2402     -1               0.9523               1.3562               1.4242     0.1369      1707.7758
+2  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC -0.3820     -1               0.8299               1.2261               1.4773     0.2710      2988.4517
+3  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH -0.5251     -1               0.9469               0.9906               1.0461     0.3220      2423.2949
+4  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE -0.4039     -1               0.9379               1.0685               1.1392     0.4736      3193.9404
+5  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT  0.3094      1               0.9706               1.1095               1.1431     0.5326      4049.9836
+6  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE  0.0812      1               0.9935               1.6269               1.6376     0.5364      2850.1137
+7            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE -0.2237     -1               0.9691               1.2933               1.3346     0.6334      3800.6686
+8            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC -0.1711     -1               0.9471               1.8209               1.9226     0.7379      6832.0204
+9  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC -0.0569     -1               0.9907               2.4572               2.4802     0.8284      8039.8784
+
+=== Pairs where rounding is nearly free (inflation < 1.05) ===
+                             a                            b   ols_h  int_h  ols_resid_std_ratio  int_resid_std_ratio  int_resid_inflation  int_adf_p  int_half_life
+3  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH -0.5251     -1               0.9469               0.9906               1.0461      0.322      2423.2949
+
+================================================================================
+>>> CELL  20: pca = PCA(n_components=P)
+================================================================================
+=== Variance explained per PC ===
+    pc  explained_var_ratio  cumulative
+0  PC1               0.2477      0.2477
+1  PC2               0.2077      0.4554
+2  PC3               0.2025      0.6579
+3  PC4               0.1749      0.8328
+4  PC5               0.1672      1.0000
+
+=== Loadings (rows: PCs, cols: products) ===
+     OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_GARLIC
+PC1                        0.039                        0.042              0.010                   0.037                0.998
+PC2                        0.051                        0.915              0.036                   0.396               -0.055
+PC3                       -0.005                       -0.398              0.020                   0.917               -0.017
+PC4                        0.987                       -0.053              0.149                  -0.022               -0.036
+PC5                       -0.151                       -0.017              0.988                  -0.030               -0.002
+
+=== PC residual stationarity ===
+    pc  explained_var_ratio                                                                                                                                                                    loadings  adf_p_score  adf_p_level  half_life_level
+0  PC1             0.247706      {'OXYGEN_SHAKE_MORNING_BREATH': 0.039, 'OXYGEN_SHAKE_EVENING_BREATH': 0.042, 'OXYGEN_SHAKE_MINT': 0.01, 'OXYGEN_SHAKE_CHOCOLATE': 0.037, 'OXYGEN_SHAKE_GARLIC': 0.998}          0.0     0.240270      2409.411254
+1  PC2             0.207662    {'OXYGEN_SHAKE_MORNING_BREATH': 0.051, 'OXYGEN_SHAKE_EVENING_BREATH': 0.915, 'OXYGEN_SHAKE_MINT': 0.036, 'OXYGEN_SHAKE_CHOCOLATE': 0.396, 'OXYGEN_SHAKE_GARLIC': -0.055}          0.0     0.422396      2557.766243
+2  PC3             0.202514   {'OXYGEN_SHAKE_MORNING_BREATH': -0.005, 'OXYGEN_SHAKE_EVENING_BREATH': -0.398, 'OXYGEN_SHAKE_MINT': 0.02, 'OXYGEN_SHAKE_CHOCOLATE': 0.917, 'OXYGEN_SHAKE_GARLIC': -0.017}          0.0     0.283503      2169.043039
+3  PC4             0.174892  {'OXYGEN_SHAKE_MORNING_BREATH': 0.987, 'OXYGEN_SHAKE_EVENING_BREATH': -0.053, 'OXYGEN_SHAKE_MINT': 0.149, 'OXYGEN_SHAKE_CHOCOLATE': -0.022, 'OXYGEN_SHAKE_GARLIC': -0.036}          0.0     0.559507      4625.807183
+4  PC5             0.167225  {'OXYGEN_SHAKE_MORNING_BREATH': -0.151, 'OXYGEN_SHAKE_EVENING_BREATH': -0.017, 'OXYGEN_SHAKE_MINT': 0.988, 'OXYGEN_SHAKE_CHOCOLATE': -0.03, 'OXYGEN_SHAKE_GARLIC': -0.002}          0.0     0.431367      3691.983692
+
+================================================================================
+>>> CELL  22: z = (mid_aligned - mid_aligned.mean()) / mid_aligned.std(ddof=0).replace(0, np.nan)
+================================================================================
+=== Each product regressed on the group composite index ===
+                       product   intercept  beta_to_index  resid_std  r_squared   adf_p  half_life
+3       OXYGEN_SHAKE_CHOCOLATE   9556.8791      1291.4777   381.3688     0.5372  0.1377  1456.3979
+1  OXYGEN_SHAKE_EVENING_BREATH   9271.8950       277.4064   389.9523     0.0487  0.1878  1960.2100
+4          OXYGEN_SHAKE_GARLIC  11925.6398      1188.8776   875.0890     0.1574  0.1945  3479.7255
+2            OXYGEN_SHAKE_MINT   9838.3941       369.2348   494.3574     0.0534  0.4964  4254.8290
+0  OXYGEN_SHAKE_MORNING_BREATH  10000.4534        18.7024   652.7671     0.0001  0.6826  6312.7745
+
+================================================================================
+>>> CELL  24: def basket_resid_var(target_idx, S):
+================================================================================
+
+=== Top continuous baskets — K = 1 (sorted by ADF p) ===
+                         target  k                                                       basket_str  r_squared   adf_p   half_life
+0           OXYGEN_SHAKE_GARLIC  1               OXYGEN_SHAKE_GARLIC − 1.098*OXYGEN_SHAKE_CHOCOLATE     0.4171  0.0187   1584.3749
+1        OXYGEN_SHAKE_CHOCOLATE  1               OXYGEN_SHAKE_CHOCOLATE − 0.380*OXYGEN_SHAKE_GARLIC     0.4171  0.0440   1418.5075
+2   OXYGEN_SHAKE_EVENING_BREATH  1            OXYGEN_SHAKE_EVENING_BREATH + 0.240*OXYGEN_SHAKE_MINT     0.0932  0.0849   1390.9551
+3   OXYGEN_SHAKE_EVENING_BREATH  1  OXYGEN_SHAKE_EVENING_BREATH + 0.197*OXYGEN_SHAKE_MORNING_BREATH     0.1034  0.0936   1394.1932
+4   OXYGEN_SHAKE_EVENING_BREATH  1       OXYGEN_SHAKE_EVENING_BREATH − 0.081*OXYGEN_SHAKE_CHOCOLATE     0.0130  0.1368   1595.5203
+5   OXYGEN_SHAKE_EVENING_BREATH  1          OXYGEN_SHAKE_EVENING_BREATH + 0.057*OXYGEN_SHAKE_GARLIC     0.0184  0.1671   1651.6984
+6   OXYGEN_SHAKE_MORNING_BREATH  1          OXYGEN_SHAKE_MORNING_BREATH + 0.382*OXYGEN_SHAKE_GARLIC     0.3113  0.3045   2919.4694
+7             OXYGEN_SHAKE_MINT  1            OXYGEN_SHAKE_MINT + 0.388*OXYGEN_SHAKE_EVENING_BREATH     0.0932  0.3113   2745.9911
+8           OXYGEN_SHAKE_GARLIC  1          OXYGEN_SHAKE_GARLIC + 0.815*OXYGEN_SHAKE_MORNING_BREATH     0.3113  0.3342   3421.2270
+9             OXYGEN_SHAKE_MINT  1            OXYGEN_SHAKE_MINT − 0.187*OXYGEN_SHAKE_MORNING_BREATH     0.0580  0.4206   3493.7597
+10            OXYGEN_SHAKE_MINT  1                 OXYGEN_SHAKE_MINT + 0.224*OXYGEN_SHAKE_CHOCOLATE     0.0609  0.4657   3532.1981
+11            OXYGEN_SHAKE_MINT  1                    OXYGEN_SHAKE_MINT + 0.171*OXYGEN_SHAKE_GARLIC     0.1030  0.4942   3615.3866
+12  OXYGEN_SHAKE_MORNING_BREATH  1       OXYGEN_SHAKE_MORNING_BREATH + 0.404*OXYGEN_SHAKE_CHOCOLATE     0.1203  0.5239   4235.4820
+13  OXYGEN_SHAKE_MORNING_BREATH  1  OXYGEN_SHAKE_MORNING_BREATH + 0.525*OXYGEN_SHAKE_EVENING_BREATH     0.1034  0.5307   3879.2962
+14       OXYGEN_SHAKE_CHOCOLATE  1       OXYGEN_SHAKE_CHOCOLATE + 0.298*OXYGEN_SHAKE_MORNING_BREATH     0.1203  0.6432   3851.1639
+15  OXYGEN_SHAKE_MORNING_BREATH  1            OXYGEN_SHAKE_MORNING_BREATH − 0.309*OXYGEN_SHAKE_MINT     0.0580  0.6572   5509.6259
+16          OXYGEN_SHAKE_GARLIC  1                    OXYGEN_SHAKE_GARLIC + 0.602*OXYGEN_SHAKE_MINT     0.1030  0.7606   8223.1350
+17       OXYGEN_SHAKE_CHOCOLATE  1                 OXYGEN_SHAKE_CHOCOLATE + 0.272*OXYGEN_SHAKE_MINT     0.0609  0.7769   4952.0084
+18       OXYGEN_SHAKE_CHOCOLATE  1       OXYGEN_SHAKE_CHOCOLATE − 0.160*OXYGEN_SHAKE_EVENING_BREATH     0.0130  0.7823   5240.4143
+19          OXYGEN_SHAKE_GARLIC  1          OXYGEN_SHAKE_GARLIC + 0.324*OXYGEN_SHAKE_EVENING_BREATH     0.0184  0.8032  10450.6962
+
+=== Top continuous baskets — K = 2 (sorted by ADF p) ===
+                         target  k                                                                                      basket_str  r_squared   adf_p  half_life
+0           OXYGEN_SHAKE_GARLIC  2          OXYGEN_SHAKE_GARLIC + 0.554*OXYGEN_SHAKE_MORNING_BREATH − 0.874*OXYGEN_SHAKE_CHOCOLATE     0.5438  0.0079  1341.9894
+1           OXYGEN_SHAKE_GARLIC  2                    OXYGEN_SHAKE_GARLIC + 0.323*OXYGEN_SHAKE_MINT − 1.026*OXYGEN_SHAKE_CHOCOLATE     0.4449  0.0252  1617.3167
+2           OXYGEN_SHAKE_GARLIC  2          OXYGEN_SHAKE_GARLIC + 0.506*OXYGEN_SHAKE_EVENING_BREATH − 1.139*OXYGEN_SHAKE_CHOCOLATE     0.4614  0.0345  1503.2390
+3        OXYGEN_SHAKE_CHOCOLATE  2          OXYGEN_SHAKE_CHOCOLATE − 0.017*OXYGEN_SHAKE_MORNING_BREATH − 0.386*OXYGEN_SHAKE_GARLIC     0.4173  0.0411  1403.4489
+4        OXYGEN_SHAKE_CHOCOLATE  2                    OXYGEN_SHAKE_CHOCOLATE + 0.049*OXYGEN_SHAKE_MINT − 0.371*OXYGEN_SHAKE_GARLIC     0.4188  0.0480  1431.3936
+5        OXYGEN_SHAKE_CHOCOLATE  2          OXYGEN_SHAKE_CHOCOLATE − 0.288*OXYGEN_SHAKE_EVENING_BREATH − 0.396*OXYGEN_SHAKE_GARLIC     0.4584  0.0504  1315.1852
+6   OXYGEN_SHAKE_EVENING_BREATH  2       OXYGEN_SHAKE_EVENING_BREATH + 0.161*OXYGEN_SHAKE_MORNING_BREATH + 0.190*OXYGEN_SHAKE_MINT     0.1585  0.0688  1277.4899
+7   OXYGEN_SHAKE_EVENING_BREATH  2            OXYGEN_SHAKE_EVENING_BREATH + 0.232*OXYGEN_SHAKE_MINT − 0.029*OXYGEN_SHAKE_CHOCOLATE     0.0948  0.0860  1394.0543
+8   OXYGEN_SHAKE_EVENING_BREATH  2  OXYGEN_SHAKE_EVENING_BREATH + 0.196*OXYGEN_SHAKE_MORNING_BREATH − 0.002*OXYGEN_SHAKE_CHOCOLATE     0.1034  0.0938  1394.7591
+9   OXYGEN_SHAKE_EVENING_BREATH  2     OXYGEN_SHAKE_EVENING_BREATH + 0.353*OXYGEN_SHAKE_MORNING_BREATH + 0.192*OXYGEN_SHAKE_GARLIC     0.2477  0.1074  1192.8744
+10  OXYGEN_SHAKE_EVENING_BREATH  2               OXYGEN_SHAKE_EVENING_BREATH + 0.306*OXYGEN_SHAKE_MINT + 0.109*OXYGEN_SHAKE_GARLIC     0.1541  0.1277  1380.6169
+11  OXYGEN_SHAKE_EVENING_BREATH  2          OXYGEN_SHAKE_EVENING_BREATH − 0.247*OXYGEN_SHAKE_CHOCOLATE + 0.151*OXYGEN_SHAKE_GARLIC     0.0881  0.1755  1513.2708
+12  OXYGEN_SHAKE_MORNING_BREATH  2     OXYGEN_SHAKE_MORNING_BREATH + 0.661*OXYGEN_SHAKE_EVENING_BREATH + 0.420*OXYGEN_SHAKE_GARLIC     0.4721  0.2128  1737.9371
+13  OXYGEN_SHAKE_MORNING_BREATH  2               OXYGEN_SHAKE_MORNING_BREATH − 0.088*OXYGEN_SHAKE_MINT + 0.367*OXYGEN_SHAKE_GARLIC     0.3155  0.2863  2917.2069
+14  OXYGEN_SHAKE_MORNING_BREATH  2          OXYGEN_SHAKE_MORNING_BREATH − 0.027*OXYGEN_SHAKE_CHOCOLATE + 0.392*OXYGEN_SHAKE_GARLIC     0.3116  0.2891  2856.3907
+15            OXYGEN_SHAKE_MINT  2            OXYGEN_SHAKE_MINT + 0.357*OXYGEN_SHAKE_EVENING_BREATH + 0.195*OXYGEN_SHAKE_CHOCOLATE     0.1388  0.3235  2676.0240
+16            OXYGEN_SHAKE_MINT  2       OXYGEN_SHAKE_MINT − 0.124*OXYGEN_SHAKE_MORNING_BREATH + 0.323*OXYGEN_SHAKE_EVENING_BREATH     0.1159  0.3280  2842.9385
+17          OXYGEN_SHAKE_GARLIC  2     OXYGEN_SHAKE_GARLIC + 0.980*OXYGEN_SHAKE_MORNING_BREATH + 0.838*OXYGEN_SHAKE_EVENING_BREATH     0.4221  0.3432  2419.2913
+18            OXYGEN_SHAKE_MINT  2               OXYGEN_SHAKE_MINT + 0.452*OXYGEN_SHAKE_EVENING_BREATH + 0.197*OXYGEN_SHAKE_GARLIC     0.2270  0.3671  2528.6673
+19  OXYGEN_SHAKE_MORNING_BREATH  2  OXYGEN_SHAKE_MORNING_BREATH + 0.467*OXYGEN_SHAKE_EVENING_BREATH + 0.366*OXYGEN_SHAKE_CHOCOLATE     0.2009  0.3829  3064.5195
+20          OXYGEN_SHAKE_GARLIC  2               OXYGEN_SHAKE_GARLIC + 0.745*OXYGEN_SHAKE_MORNING_BREATH + 0.372*OXYGEN_SHAKE_MINT     0.3482  0.3945  3534.4576
+21            OXYGEN_SHAKE_MINT  2            OXYGEN_SHAKE_MINT − 0.137*OXYGEN_SHAKE_MORNING_BREATH + 0.168*OXYGEN_SHAKE_CHOCOLATE     0.0883  0.4396  3475.1941
+22            OXYGEN_SHAKE_MINT  2               OXYGEN_SHAKE_MINT − 0.070*OXYGEN_SHAKE_MORNING_BREATH + 0.144*OXYGEN_SHAKE_GARLIC     0.1086  0.4754  3611.9143
+23            OXYGEN_SHAKE_MINT  2                    OXYGEN_SHAKE_MINT + 0.061*OXYGEN_SHAKE_CHOCOLATE + 0.148*OXYGEN_SHAKE_GARLIC     0.1057  0.5120  3700.3216
+24  OXYGEN_SHAKE_MORNING_BREATH  2            OXYGEN_SHAKE_MORNING_BREATH − 0.212*OXYGEN_SHAKE_MINT + 0.356*OXYGEN_SHAKE_CHOCOLATE     0.1460  0.5346  4153.7855
+25  OXYGEN_SHAKE_MORNING_BREATH  2       OXYGEN_SHAKE_MORNING_BREATH + 0.447*OXYGEN_SHAKE_EVENING_BREATH − 0.202*OXYGEN_SHAKE_MINT     0.1259  0.5618  4075.6492
+26       OXYGEN_SHAKE_CHOCOLATE  2  OXYGEN_SHAKE_CHOCOLATE + 0.297*OXYGEN_SHAKE_MORNING_BREATH − 0.004*OXYGEN_SHAKE_EVENING_BREATH     0.1203  0.6439  3855.4849
+27       OXYGEN_SHAKE_CHOCOLATE  2            OXYGEN_SHAKE_CHOCOLATE + 0.262*OXYGEN_SHAKE_MORNING_BREATH + 0.191*OXYGEN_SHAKE_MINT     0.1486  0.6601  3828.6250
+28       OXYGEN_SHAKE_CHOCOLATE  2            OXYGEN_SHAKE_CHOCOLATE − 0.059*OXYGEN_SHAKE_EVENING_BREATH + 0.258*OXYGEN_SHAKE_MINT     0.0626  0.7856  4991.4776
+29          OXYGEN_SHAKE_GARLIC  2               OXYGEN_SHAKE_GARLIC + 0.615*OXYGEN_SHAKE_EVENING_BREATH + 0.750*OXYGEN_SHAKE_MINT     0.1633  0.8233  7875.9816
+
+=== Top continuous baskets — K = 3 (sorted by ADF p) ===
+                         target  k                                                                                                                  basket_str  r_squared   adf_p  half_life
+0           OXYGEN_SHAKE_GARLIC  3  OXYGEN_SHAKE_GARLIC + 0.720*OXYGEN_SHAKE_MORNING_BREATH + 0.841*OXYGEN_SHAKE_EVENING_BREATH − 0.876*OXYGEN_SHAKE_CHOCOLATE     0.6554  0.0083   958.8028
+1           OXYGEN_SHAKE_GARLIC  3            OXYGEN_SHAKE_GARLIC + 0.525*OXYGEN_SHAKE_MORNING_BREATH + 0.211*OXYGEN_SHAKE_MINT − 0.839*OXYGEN_SHAKE_CHOCOLATE     0.5554  0.0103  1371.1492
+2        OXYGEN_SHAKE_CHOCOLATE  3  OXYGEN_SHAKE_CHOCOLATE − 0.155*OXYGEN_SHAKE_MORNING_BREATH − 0.390*OXYGEN_SHAKE_EVENING_BREATH − 0.461*OXYGEN_SHAKE_GARLIC     0.4755  0.0255  1124.8814
+3        OXYGEN_SHAKE_CHOCOLATE  3            OXYGEN_SHAKE_CHOCOLATE − 0.020*OXYGEN_SHAKE_MORNING_BREATH + 0.050*OXYGEN_SHAKE_MINT − 0.379*OXYGEN_SHAKE_GARLIC     0.4192  0.0443  1413.2872
+4        OXYGEN_SHAKE_CHOCOLATE  3            OXYGEN_SHAKE_CHOCOLATE − 0.309*OXYGEN_SHAKE_EVENING_BREATH − 0.046*OXYGEN_SHAKE_MINT − 0.405*OXYGEN_SHAKE_GARLIC     0.4598  0.0470  1289.8656
+5           OXYGEN_SHAKE_GARLIC  3            OXYGEN_SHAKE_GARLIC + 0.677*OXYGEN_SHAKE_EVENING_BREATH + 0.480*OXYGEN_SHAKE_MINT − 1.046*OXYGEN_SHAKE_CHOCOLATE     0.5178  0.0498  1424.6106
+6   OXYGEN_SHAKE_EVENING_BREATH  3    OXYGEN_SHAKE_EVENING_BREATH + 0.169*OXYGEN_SHAKE_MORNING_BREATH + 0.196*OXYGEN_SHAKE_MINT + 0.031*OXYGEN_SHAKE_CHOCOLATE     0.1601  0.0659  1265.2244
+7   OXYGEN_SHAKE_EVENING_BREATH  3  OXYGEN_SHAKE_EVENING_BREATH + 0.358*OXYGEN_SHAKE_MORNING_BREATH − 0.256*OXYGEN_SHAKE_CHOCOLATE + 0.291*OXYGEN_SHAKE_GARLIC     0.3228  0.0724   985.4522
+8   OXYGEN_SHAKE_EVENING_BREATH  3       OXYGEN_SHAKE_EVENING_BREATH + 0.334*OXYGEN_SHAKE_MORNING_BREATH + 0.276*OXYGEN_SHAKE_MINT + 0.232*OXYGEN_SHAKE_GARLIC     0.3577  0.0735   996.0226
+9   OXYGEN_SHAKE_EVENING_BREATH  3            OXYGEN_SHAKE_EVENING_BREATH + 0.295*OXYGEN_SHAKE_MINT − 0.228*OXYGEN_SHAKE_CHOCOLATE + 0.194*OXYGEN_SHAKE_GARLIC     0.2137  0.1185  1248.4873
+10  OXYGEN_SHAKE_MORNING_BREATH  3  OXYGEN_SHAKE_MORNING_BREATH + 0.720*OXYGEN_SHAKE_EVENING_BREATH − 0.204*OXYGEN_SHAKE_CHOCOLATE + 0.501*OXYGEN_SHAKE_GARLIC     0.4888  0.1207  1420.3918
+11  OXYGEN_SHAKE_MORNING_BREATH  3       OXYGEN_SHAKE_MORNING_BREATH + 0.721*OXYGEN_SHAKE_EVENING_BREATH + 0.132*OXYGEN_SHAKE_MINT + 0.446*OXYGEN_SHAKE_GARLIC     0.4803  0.1961  1606.5700
+12  OXYGEN_SHAKE_MORNING_BREATH  3            OXYGEN_SHAKE_MORNING_BREATH − 0.090*OXYGEN_SHAKE_MINT − 0.032*OXYGEN_SHAKE_CHOCOLATE + 0.379*OXYGEN_SHAKE_GARLIC     0.3160  0.2841  2842.9763
+13            OXYGEN_SHAKE_MINT  3       OXYGEN_SHAKE_MINT + 0.117*OXYGEN_SHAKE_MORNING_BREATH + 0.529*OXYGEN_SHAKE_EVENING_BREATH + 0.246*OXYGEN_SHAKE_GARLIC     0.2390  0.3344  2259.8122
+14          OXYGEN_SHAKE_GARLIC  3       OXYGEN_SHAKE_GARLIC + 0.910*OXYGEN_SHAKE_MORNING_BREATH + 1.021*OXYGEN_SHAKE_EVENING_BREATH + 0.566*OXYGEN_SHAKE_MINT     0.5025  0.3354  1983.6199
+15            OXYGEN_SHAKE_MINT  3    OXYGEN_SHAKE_MINT − 0.074*OXYGEN_SHAKE_MORNING_BREATH + 0.322*OXYGEN_SHAKE_EVENING_BREATH + 0.168*OXYGEN_SHAKE_CHOCOLATE     0.1460  0.3372  2768.8693
+16            OXYGEN_SHAKE_MINT  3            OXYGEN_SHAKE_MINT + 0.467*OXYGEN_SHAKE_EVENING_BREATH − 0.054*OXYGEN_SHAKE_CHOCOLATE + 0.218*OXYGEN_SHAKE_GARLIC     0.2289  0.3475  2436.6869
+17  OXYGEN_SHAKE_MORNING_BREATH  3    OXYGEN_SHAKE_MORNING_BREATH + 0.426*OXYGEN_SHAKE_EVENING_BREATH − 0.113*OXYGEN_SHAKE_MINT + 0.344*OXYGEN_SHAKE_CHOCOLATE     0.2077  0.4252  3186.8892
+18            OXYGEN_SHAKE_MINT  3            OXYGEN_SHAKE_MINT − 0.071*OXYGEN_SHAKE_MORNING_BREATH + 0.063*OXYGEN_SHAKE_CHOCOLATE + 0.120*OXYGEN_SHAKE_GARLIC     0.1114  0.4892  3677.8356
+19       OXYGEN_SHAKE_CHOCOLATE  3    OXYGEN_SHAKE_CHOCOLATE + 0.272*OXYGEN_SHAKE_MORNING_BREATH + 0.062*OXYGEN_SHAKE_EVENING_BREATH + 0.203*OXYGEN_SHAKE_MINT     0.1503  0.6448  3720.5328
+
+=== Top continuous baskets — K = 4 (sorted by ADF p) ===
+                        target  k                                                                                                                                            basket_str  r_squared   adf_p  half_life
+0          OXYGEN_SHAKE_GARLIC  4  OXYGEN_SHAKE_GARLIC + 0.690*OXYGEN_SHAKE_MORNING_BREATH + 0.971*OXYGEN_SHAKE_EVENING_BREATH + 0.402*OXYGEN_SHAKE_MINT − 0.809*OXYGEN_SHAKE_CHOCOLATE     0.6946  0.0085   862.3589
+1       OXYGEN_SHAKE_CHOCOLATE  4  OXYGEN_SHAKE_CHOCOLATE − 0.162*OXYGEN_SHAKE_MORNING_BREATH − 0.426*OXYGEN_SHAKE_EVENING_BREATH − 0.067*OXYGEN_SHAKE_MINT − 0.478*OXYGEN_SHAKE_GARLIC     0.4783  0.0218  1081.9896
+2  OXYGEN_SHAKE_EVENING_BREATH  4  OXYGEN_SHAKE_EVENING_BREATH + 0.339*OXYGEN_SHAKE_MORNING_BREATH + 0.264*OXYGEN_SHAKE_MINT − 0.239*OXYGEN_SHAKE_CHOCOLATE + 0.323*OXYGEN_SHAKE_GARLIC     0.4231  0.0413   819.2347
+3  OXYGEN_SHAKE_MORNING_BREATH  4  OXYGEN_SHAKE_MORNING_BREATH + 0.786*OXYGEN_SHAKE_EVENING_BREATH + 0.142*OXYGEN_SHAKE_MINT − 0.212*OXYGEN_SHAKE_CHOCOLATE + 0.531*OXYGEN_SHAKE_GARLIC     0.4981  0.1033  1296.3462
+4            OXYGEN_SHAKE_MINT  4  OXYGEN_SHAKE_MINT + 0.130*OXYGEN_SHAKE_MORNING_BREATH + 0.560*OXYGEN_SHAKE_EVENING_BREATH − 0.080*OXYGEN_SHAKE_CHOCOLATE + 0.283*OXYGEN_SHAKE_GARLIC     0.2431  0.2950  2093.0957
+
+================================================================================
+>>> CELL  26: def integer_var(c_int, target_idx, S):
+================================================================================
+
+=== Top integer baskets — K = 1 (sorted by ADF p) ===
+                         target  k                                             int_basket_str  max_abs_coef  int_resid_std_ratio  int_resid_inflation  int_adf_p  int_half_life
+0           OXYGEN_SHAKE_GARLIC  1               OXYGEN_SHAKE_GARLIC − OXYGEN_SHAKE_CHOCOLATE             1               0.7657               1.0029     0.0268      1731.1019
+1        OXYGEN_SHAKE_CHOCOLATE  1               OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_GARLIC             1               1.3021               1.7054     0.0268      1731.1019
+2   OXYGEN_SHAKE_EVENING_BREATH  1            OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               1.3562               1.4242     0.1369      1707.7758
+3             OXYGEN_SHAKE_MINT  1            OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_EVENING_BREATH             1               1.0671               1.1206     0.1369      1707.7758
+4   OXYGEN_SHAKE_MORNING_BREATH  1          OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_GARLIC             1               1.2261               1.4773     0.2710      2988.4517
+5           OXYGEN_SHAKE_GARLIC  1          OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH             1               0.8395               1.0116     0.2710      2988.4517
+6   OXYGEN_SHAKE_EVENING_BREATH  1  OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MORNING_BREATH             1               1.6173               1.7080     0.3220      2423.2949
+7   OXYGEN_SHAKE_MORNING_BREATH  1  OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.9906               1.0461     0.3220      2423.2949
+8        OXYGEN_SHAKE_CHOCOLATE  1       OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_MORNING_BREATH             1               1.2442               1.3266     0.4736      3193.9404
+9   OXYGEN_SHAKE_MORNING_BREATH  1       OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_CHOCOLATE             1               1.0685               1.1392     0.4736      3193.9404
+10  OXYGEN_SHAKE_MORNING_BREATH  1            OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_MINT             1               1.1095               1.1431     0.5326      4049.9836
+11            OXYGEN_SHAKE_MINT  1            OXYGEN_SHAKE_MINT − OXYGEN_SHAKE_MORNING_BREATH             1               1.4254               1.4686     0.5326      4049.9836
+12  OXYGEN_SHAKE_EVENING_BREATH  1       OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_CHOCOLATE             1               1.6269               1.6376     0.5364      2850.1137
+13       OXYGEN_SHAKE_CHOCOLATE  1       OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_EVENING_BREATH             1               1.1603               1.1679     0.5364      2850.1137
+14            OXYGEN_SHAKE_MINT  1                 OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_CHOCOLATE             1               1.2933               1.3346     0.6334      3800.6686
+15       OXYGEN_SHAKE_CHOCOLATE  1                 OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_MINT             1               1.1722               1.2097     0.6334      3800.6686
+16          OXYGEN_SHAKE_GARLIC  1                    OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MINT             1               0.9705               1.0248     0.7379      6832.0204
+17            OXYGEN_SHAKE_MINT  1                    OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_GARLIC             1               1.8209               1.9226     0.7379      6832.0204
+18  OXYGEN_SHAKE_EVENING_BREATH  1          OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_GARLIC             1               2.4572               2.4802     0.8284      8039.8784
+19          OXYGEN_SHAKE_GARLIC  1          OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_EVENING_BREATH             1               1.0305               1.0402     0.8284      8039.8784
+
+  → Cheap integer baskets (inflation < 1.05, max|c| ≤ 3) for K = 1:
+                         target                                             int_basket_str  max_abs_coef  int_resid_std_ratio  int_adf_p  int_half_life
+0           OXYGEN_SHAKE_GARLIC               OXYGEN_SHAKE_GARLIC − OXYGEN_SHAKE_CHOCOLATE             1               0.7657     0.0268      1731.1019
+5           OXYGEN_SHAKE_GARLIC          OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH             1               0.8395     0.2710      2988.4517
+7   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.9906     0.3220      2423.2949
+16          OXYGEN_SHAKE_GARLIC                    OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MINT             1               0.9705     0.7379      6832.0204
+19          OXYGEN_SHAKE_GARLIC          OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_EVENING_BREATH             1               1.0305     0.8284      8039.8784
+
+=== Top integer baskets — K = 2 (sorted by ADF p) ===
+                         target  k                                                                   int_basket_str  max_abs_coef  int_resid_std_ratio  int_resid_inflation  int_adf_p  int_half_life
+0           OXYGEN_SHAKE_GARLIC  2       OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_CHOCOLATE             1               0.7553               1.1182     0.0103      1310.1496
+1           OXYGEN_SHAKE_GARLIC  2                                     OXYGEN_SHAKE_GARLIC − OXYGEN_SHAKE_CHOCOLATE             1               0.7657               1.0277     0.0268      1731.1019
+2           OXYGEN_SHAKE_GARLIC  2                                     OXYGEN_SHAKE_GARLIC − OXYGEN_SHAKE_CHOCOLATE             1               0.7657               1.0434     0.0268      1731.1019
+3             OXYGEN_SHAKE_MINT  2                                  OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_EVENING_BREATH             1               1.0671               1.2137     0.1369      1707.7758
+4   OXYGEN_SHAKE_EVENING_BREATH  2                                  OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               1.3562               1.4746     0.1369      1707.7758
+5             OXYGEN_SHAKE_MINT  2                                  OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_EVENING_BREATH             1               1.0671               1.1499     0.1369      1707.7758
+6   OXYGEN_SHAKE_EVENING_BREATH  2                                  OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               1.3562               1.4254     0.1369      1707.7758
+7             OXYGEN_SHAKE_MINT  2                                  OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_EVENING_BREATH             1               1.0671               1.1349     0.1369      1707.7758
+8   OXYGEN_SHAKE_EVENING_BREATH  2                                  OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               1.3562               1.4784     0.1369      1707.7758
+9           OXYGEN_SHAKE_GARLIC  2                                OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH             1               0.8395               1.0399     0.2710      2988.4517
+10  OXYGEN_SHAKE_EVENING_BREATH  2                        OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MORNING_BREATH             1               1.6173               1.8646     0.3220      2423.2949
+11  OXYGEN_SHAKE_MORNING_BREATH  2                        OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.9906               1.1081     0.3220      2423.2949
+12  OXYGEN_SHAKE_MORNING_BREATH  2                        OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.9906               1.3633     0.3220      2423.2949
+13  OXYGEN_SHAKE_MORNING_BREATH  2                        OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.9906               1.0595     0.3220      2423.2949
+14  OXYGEN_SHAKE_EVENING_BREATH  2                        OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MORNING_BREATH             1               1.6173               1.7081     0.3220      2423.2949
+15          OXYGEN_SHAKE_GARLIC  2  OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.7630               1.0036     0.3286      2221.7351
+16  OXYGEN_SHAKE_MORNING_BREATH  2                             OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_CHOCOLATE             1               1.0685               1.1562     0.4736      3193.9404
+17  OXYGEN_SHAKE_MORNING_BREATH  2                             OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_CHOCOLATE             1               1.0685               1.2878     0.4736      3193.9404
+18       OXYGEN_SHAKE_CHOCOLATE  2                             OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_MORNING_BREATH             1               1.2442               1.6300     0.4736      3193.9404
+19  OXYGEN_SHAKE_MORNING_BREATH  2                                  OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_MINT             1               1.1095               1.3410     0.5326      4049.9836
+20            OXYGEN_SHAKE_MINT  2                                  OXYGEN_SHAKE_MINT − OXYGEN_SHAKE_MORNING_BREATH             1               1.4254               1.5097     0.5326      4049.9836
+21  OXYGEN_SHAKE_EVENING_BREATH  2                             OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_CHOCOLATE             1               1.6269               1.7037     0.5364      2850.1137
+22       OXYGEN_SHAKE_CHOCOLATE  2                             OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_EVENING_BREATH             1               1.1603               1.5767     0.5364      2850.1137
+23       OXYGEN_SHAKE_CHOCOLATE  2                             OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_EVENING_BREATH             1               1.1603               1.2371     0.5364      2850.1137
+24       OXYGEN_SHAKE_CHOCOLATE  2                             OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_EVENING_BREATH             1               1.1603               1.1984     0.5364      2850.1137
+25            OXYGEN_SHAKE_MINT  2                                       OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_CHOCOLATE             1               1.2933               1.3545     0.6334      3800.6686
+26            OXYGEN_SHAKE_MINT  2                                       OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_CHOCOLATE             1               1.2933               1.3676     0.6334      3800.6686
+27       OXYGEN_SHAKE_CHOCOLATE  2                                       OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_MINT             1               1.1722               1.5376     0.6334      3800.6686
+28       OXYGEN_SHAKE_CHOCOLATE  2                                       OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_MINT             1               1.1722               1.2704     0.6334      3800.6686
+29          OXYGEN_SHAKE_GARLIC  2            OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               0.9314               1.0182     0.7851      5300.8670
+
+  → Cheap integer baskets (inflation < 1.05, max|c| ≤ 3) for K = 2:
+                 target                                                                   int_basket_str  max_abs_coef  int_resid_std_ratio  int_adf_p  int_half_life
+1   OXYGEN_SHAKE_GARLIC                                     OXYGEN_SHAKE_GARLIC − OXYGEN_SHAKE_CHOCOLATE             1               0.7657     0.0268      1731.1019
+2   OXYGEN_SHAKE_GARLIC                                     OXYGEN_SHAKE_GARLIC − OXYGEN_SHAKE_CHOCOLATE             1               0.7657     0.0268      1731.1019
+9   OXYGEN_SHAKE_GARLIC                                OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH             1               0.8395     0.2710      2988.4517
+15  OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.7630     0.3286      2221.7351
+29  OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               0.9314     0.7851      5300.8670
+
+=== Top integer baskets — K = 3 (sorted by ADF p) ===
+                         target  k                                                                                            int_basket_str  max_abs_coef  int_resid_std_ratio  int_resid_inflation  int_adf_p  int_half_life
+0           OXYGEN_SHAKE_GARLIC  3  OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_CHOCOLATE             1               0.6258               1.0661     0.0075       866.7573
+1        OXYGEN_SHAKE_CHOCOLATE  3  OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_GARLIC             1               1.0642               1.4695     0.0075       866.7573
+2   OXYGEN_SHAKE_EVENING_BREATH  3  OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_GARLIC             1               1.4921               1.8132     0.0075       866.7573
+3   OXYGEN_SHAKE_MORNING_BREATH  3  OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_GARLIC             1               0.9139               1.2782     0.0075       866.7573
+4           OXYGEN_SHAKE_GARLIC  3                                OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_CHOCOLATE             1               0.7553               1.1327     0.0103      1310.1496
+5           OXYGEN_SHAKE_GARLIC  3            OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT − OXYGEN_SHAKE_CHOCOLATE             1               0.7432               1.0702     0.0882      1394.5915
+6             OXYGEN_SHAKE_MINT  3                                                           OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_EVENING_BREATH             1               1.0671               1.2152     0.1369      1707.7758
+7             OXYGEN_SHAKE_MINT  3                                                           OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_EVENING_BREATH             1               1.0671               1.1547     0.1369      1707.7758
+8             OXYGEN_SHAKE_MINT  3                                                           OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_EVENING_BREATH             1               1.0671               1.2232     0.1369      1707.7758
+9   OXYGEN_SHAKE_EVENING_BREATH  3                                                           OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               1.3562               1.5294     0.1369      1707.7758
+10  OXYGEN_SHAKE_EVENING_BREATH  3                                                           OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               1.3562               1.6922     0.1369      1707.7758
+11  OXYGEN_SHAKE_EVENING_BREATH  3                                                           OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               1.3562               1.4798     0.1369      1707.7758
+12          OXYGEN_SHAKE_GARLIC  3       OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               0.7506               1.0642     0.2962      1863.9678
+13  OXYGEN_SHAKE_MORNING_BREATH  3                                                 OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.9906               1.3740     0.3220      2423.2949
+14  OXYGEN_SHAKE_MORNING_BREATH  3                                                 OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH             1               0.9906               1.1128     0.3220      2423.2949
+15  OXYGEN_SHAKE_MORNING_BREATH  3                                                      OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_CHOCOLATE             1               1.0685               1.2919     0.4736      3193.9404
+16       OXYGEN_SHAKE_CHOCOLATE  3                                                      OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_EVENING_BREATH             1               1.1603               1.5786     0.5364      2850.1137
+17       OXYGEN_SHAKE_CHOCOLATE  3                                                      OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_EVENING_BREATH             1               1.1603               1.2587     0.5364      2850.1137
+18       OXYGEN_SHAKE_CHOCOLATE  3                                                                OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_MINT             1               1.1722               1.5381     0.6334      3800.6686
+19            OXYGEN_SHAKE_MINT  3                                                                OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_CHOCOLATE             1               1.2933               1.3720     0.6334      3800.6686
+
+=== Top integer baskets — K = 4 (sorted by ADF p) ===
+                        target  k                                                                                            int_basket_str  max_abs_coef  int_resid_std_ratio  int_resid_inflation  int_adf_p  int_half_life
+0          OXYGEN_SHAKE_GARLIC  4  OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_CHOCOLATE             1               0.6258               1.1324     0.0075       866.7573
+1       OXYGEN_SHAKE_CHOCOLATE  4  OXYGEN_SHAKE_CHOCOLATE − OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_GARLIC             1               1.0642               1.4734     0.0075       866.7573
+2  OXYGEN_SHAKE_MORNING_BREATH  4  OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_GARLIC             1               0.9139               1.2900     0.0075       866.7573
+3  OXYGEN_SHAKE_EVENING_BREATH  4                                                           OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             1               1.3562               1.7856     0.1369      1707.7758
+4            OXYGEN_SHAKE_MINT  4                                                           OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_EVENING_BREATH             1               1.0671               1.2265     0.1369      1707.7758
+
+================================================================================
+>>> CELL  28: def best_integer_combo(S):
+================================================================================
+=== Pure integer combinations sorted by ADF p, then var_ratio ===
+    k                                                                                                                      basket         int_coefs                                                                                                                          basket_str  max_abs_coef     combo_var  var_ratio   adf_p  half_life
+0   2                                                                               [OXYGEN_SHAKE_CHOCOLATE, OXYGEN_SHAKE_GARLIC]           [-4, 2]                                                                                  − 4*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC             4  3.141403e+06     0.3626  0.0135  1244.9034
+1   3                                                  [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_CHOCOLATE, OXYGEN_SHAKE_GARLIC]        [0, -4, 2]                                                                                  − 4*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC             4  3.141403e+06     0.3626  0.0135  1244.9034
+2   3                                                            [OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_CHOCOLATE, OXYGEN_SHAKE_GARLIC]        [0, -4, 2]                                                                                  − 4*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC             4  3.141403e+06     0.3626  0.0135  1244.9034
+3   4                               [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_CHOCOLATE, OXYGEN_SHAKE_GARLIC]     [0, 0, 4, -2]                                                                                    4*OXYGEN_SHAKE_CHOCOLATE − 2*OXYGEN_SHAKE_GARLIC             4  3.141403e+06     0.3626  0.0135  1244.9034
+4   4                     [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_CHOCOLATE, OXYGEN_SHAKE_GARLIC]     [2, 4, -2, 2]                    2*OXYGEN_SHAKE_MORNING_BREATH + 4*OXYGEN_SHAKE_EVENING_BREATH − 2*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC             4  2.052311e+06     0.2242  0.0247   822.2607
+5   5  [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_CHOCOLATE, OXYGEN_SHAKE_GARLIC]  [2, 4, 1, -1, 2]  2*OXYGEN_SHAKE_MORNING_BREATH + 4*OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT − OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC             4  1.786618e+06     0.2109  0.0461   836.1177
+6   3                                               [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_MINT]         [1, 4, 1]                                                     OXYGEN_SHAKE_MORNING_BREATH + 4*OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT             4  2.234120e+06     0.6891  0.0659  1263.4316
+7   4                       [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_CHOCOLATE]   [-1, -4, -1, 0]                                                   − OXYGEN_SHAKE_MORNING_BREATH − 4*OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_MINT             4  2.234120e+06     0.6891  0.0659  1263.4316
+8   3                                                  [OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_CHOCOLATE, OXYGEN_SHAKE_GARLIC]        [4, -4, 2]                                                    4*OXYGEN_SHAKE_EVENING_BREATH − 4*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC             4  4.054734e+06     0.3613  0.0736  1218.0934
+9   3                                                    [OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_CHOCOLATE]         [4, 2, 0]                                                                                 4*OXYGEN_SHAKE_EVENING_BREATH + 2*OXYGEN_SHAKE_MINT             4  2.598043e+06     0.7236  0.0752  1370.0264
+10  4                               [OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_CHOCOLATE, OXYGEN_SHAKE_GARLIC]     [4, 2, -2, 1]                                4*OXYGEN_SHAKE_EVENING_BREATH + 2*OXYGEN_SHAKE_MINT − 2*OXYGEN_SHAKE_CHOCOLATE + OXYGEN_SHAKE_GARLIC             4  2.501760e+06     0.4346  0.0832  1191.2697
+11  2                                                                            [OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_MINT]          [-4, -1]                                                                                 − 4*OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_MINT             4  2.319648e+06     0.8238  0.0839  1386.2579
+12  2                                                                  [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_EVENING_BREATH]          [-1, -4]                                                                       − OXYGEN_SHAKE_MORNING_BREATH − 4*OXYGEN_SHAKE_EVENING_BREATH             4  2.312321e+06     0.7750  0.0914  1380.6991
+13  3                                          [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_CHOCOLATE]       [-1, -4, 0]                                                                       − OXYGEN_SHAKE_MORNING_BREATH − 4*OXYGEN_SHAKE_EVENING_BREATH             4  2.312321e+06     0.7750  0.0914  1380.6991
+14  3                                             [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_GARLIC]      [-2, -4, -1]                                               − 2*OXYGEN_SHAKE_MORNING_BREATH − 4*OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_GARLIC             4  2.025278e+06     0.3917  0.0994  1144.5737
+15  4                          [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_GARLIC]  [-1, -4, -1, -1]                             − OXYGEN_SHAKE_MORNING_BREATH − 4*OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_MINT − OXYGEN_SHAKE_GARLIC             4  1.723536e+06     0.4152  0.1166  1112.2868
+16  2                                                                       [OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_CHOCOLATE]           [-4, 1]                                                                            − 4*OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_CHOCOLATE             4  2.667845e+06     0.9289  0.1672  1656.7665
+17  2                                                                          [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_GARLIC]          [-4, -2]                                                                             − 4*OXYGEN_SHAKE_MORNING_BREATH − 2*OXYGEN_SHAKE_GARLIC             4  4.898395e+06     0.4686  0.2310  2632.2148
+18  3                                                       [OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_GARLIC]         [4, 2, 1]                                                           4*OXYGEN_SHAKE_EVENING_BREATH + 2*OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_GARLIC             4  2.470887e+06     0.5492  0.2382  1555.3888
+19  2                                                                          [OXYGEN_SHAKE_EVENING_BREATH, OXYGEN_SHAKE_GARLIC]          [-4, -1]                                                                               − 4*OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_GARLIC             4  3.052424e+06     0.8806  0.4133  2230.7579
+20  2                                                                            [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_MINT]           [1, -4]                                                                                   OXYGEN_SHAKE_MORNING_BREATH − 4*OXYGEN_SHAKE_MINT             4  3.918029e+06     0.8598  0.4188  3448.9572
+21  2                                                                                    [OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_GARLIC]          [-4, -1]                                                                                         − 4*OXYGEN_SHAKE_MINT − OXYGEN_SHAKE_GARLIC             4  3.795964e+06     0.7532  0.5233  3711.8385
+22  3                                                       [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_GARLIC]         [0, 4, 1]                                                                                           4*OXYGEN_SHAKE_MINT + OXYGEN_SHAKE_GARLIC             4  3.795964e+06     0.7532  0.5233  3711.8385
+23  2                                                                                 [OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_CHOCOLATE]          [-4, -2]                                                                                    − 4*OXYGEN_SHAKE_MINT − 2*OXYGEN_SHAKE_CHOCOLATE             4  4.263142e+06     0.7912  0.5259  3477.1715
+24  2                                                                       [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_CHOCOLATE]          [-2, -4]                                                                          − 2*OXYGEN_SHAKE_MORNING_BREATH − 4*OXYGEN_SHAKE_CHOCOLATE             4  4.701783e+06     0.6983  0.5498  3338.3214
+25  3                                                    [OXYGEN_SHAKE_MORNING_BREATH, OXYGEN_SHAKE_MINT, OXYGEN_SHAKE_CHOCOLATE]         [0, 4, 3]                                                                                      4*OXYGEN_SHAKE_MINT + 3*OXYGEN_SHAKE_CHOCOLATE             4  5.271995e+06     0.7575  0.5912  3601.3127
+
+Best pure k=2 combo: − 4*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC  (ADF p=0.0135, half-life=1244.9034499801708)
+
+Best pure k=3 combo: − 4*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC  (ADF p=0.0135, half-life=1244.9034499801708)
+
+Best pure k=4 combo: 4*OXYGEN_SHAKE_CHOCOLATE − 2*OXYGEN_SHAKE_GARLIC  (ADF p=0.0135, half-life=1244.9034499801708)
+
+Best pure k=5 combo: 2*OXYGEN_SHAKE_MORNING_BREATH + 4*OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT − OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC  (ADF p=0.0461, half-life=836.117742123947)
+
+================================================================================
+>>> CELL  30: def plot_residual(name, series, window=WINDOW_FAST):
+================================================================================
+=== Dashboard — winners by section, sorted by p-value ===
+                              section                                                                                                                                                recipe  p_value   half_life
+0                §11 best integer K=3                                              OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_CHOCOLATE  0.00747   866.75730
+1                §11 best integer K=4                                              OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH + OXYGEN_SHAKE_EVENING_BREATH − OXYGEN_SHAKE_CHOCOLATE  0.00747   866.75730
+2             §10 best continuous K=2                                                                OXYGEN_SHAKE_GARLIC + 0.554*OXYGEN_SHAKE_MORNING_BREATH − 0.874*OXYGEN_SHAKE_CHOCOLATE  0.00790  1341.98938
+3             §10 best continuous K=3                            OXYGEN_SHAKE_GARLIC + 0.720*OXYGEN_SHAKE_MORNING_BREATH + 0.841*OXYGEN_SHAKE_EVENING_BREATH − 0.876*OXYGEN_SHAKE_CHOCOLATE  0.00832   958.80280
+4             §10 best continuous K=4  OXYGEN_SHAKE_GARLIC + 0.690*OXYGEN_SHAKE_MORNING_BREATH + 0.971*OXYGEN_SHAKE_EVENING_BREATH + 0.402*OXYGEN_SHAKE_MINT − 0.809*OXYGEN_SHAKE_CHOCOLATE  0.00851   862.35886
+5                §11 best integer K=2                                                                            OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_CHOCOLATE  0.01031  1310.14964
+6           §12 best pure integer k=2                                                                                                    − 4*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC  0.01354  1244.90345
+7           §12 best pure integer k=3                                                                                                    − 4*OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC  0.01354  1244.90345
+8           §12 best pure integer k=4                                                                                                      4*OXYGEN_SHAKE_CHOCOLATE − 2*OXYGEN_SHAKE_GARLIC  0.01354  1244.90345
+9             §10 best continuous K=1                                                                                                    OXYGEN_SHAKE_GARLIC − 1.098*OXYGEN_SHAKE_CHOCOLATE  0.01869  1584.37492
+10               §7 best integer pair                                                                                                        OXYGEN_SHAKE_CHOCOLATE − 1·OXYGEN_SHAKE_GARLIC  0.02683  1731.10187
+11               §11 best integer K=1                                                                                                          OXYGEN_SHAKE_GARLIC − OXYGEN_SHAKE_CHOCOLATE  0.02683  1731.10187
+12          §12 best pure integer k=5                    2*OXYGEN_SHAKE_MORNING_BREATH + 4*OXYGEN_SHAKE_EVENING_BREATH + OXYGEN_SHAKE_MINT − OXYGEN_SHAKE_CHOCOLATE + 2*OXYGEN_SHAKE_GARLIC  0.04606   836.11774
+13                   §6 best OLS pair                                                                                                    OXYGEN_SHAKE_CHOCOLATE − 0.380·OXYGEN_SHAKE_GARLIC  0.12996  1418.50748
+14  §9 best product-vs-index residual                                                                                                   OXYGEN_SHAKE_CHOCOLATE − (9556.88 + 1291.478·index)  0.13767  1456.39794
+
+================================================================================
+>>> CELL  31: # Plot the residual for the top 6 dashboard entries
+================================================================================
+
+================================================================================
+>>> CELL  34: display(Markdown("""## §15 — Microstructure feature panel (beyond mid)
+================================================================================
+## §15 — Microstructure feature panel (beyond mid)
+
+Up to here we've only used `mid_price`. The order book in `prices_round_5_day_*.csv` carries much richer per-tick features that often **leak information BEFORE the mid moves**:
+
+| Feature | Definition | Why it matters |
+|---|---|---|
+| `bid1`, `ask1` | top of book | cleaner than mid for execution |
+| `spread` | `ask1 − bid1` | volatility / illiquidity proxy |
+| `bid_depth`, `ask_depth` | sum of L1+L2+L3 volumes | total committed liquidity per side |
+| `obi` | `(bid_depth − ask_depth) / (bid_depth + ask_depth)` | imbalance ∈ [−1, 1]; classical short-horizon predictor |
+| `microprice` | `(bid1·ask_vol1 + ask1·bid_vol1) / (bid_vol1 + ask_vol1)` | execution-weighted price |
+| `mp_minus_mid` | `microprice − mid` | short-term drift signal |
+
+Sections §20-§22 use these to look for cross-product information leakage that mid-correlation misses entirely.
+Feature panels (rows = aligned ticks, cols = products):
+  bid1           shape=(30000, 5)  mean=+10112.2046  std=1135.7887
+  ask1           shape=(30000, 5)  mean=+10125.1000  std=1137.1196
+  spread         shape=(30000, 5)  mean=+12.8954  std=1.8311
+  bid_depth      shape=(30000, 5)  mean=+49.5680  std=5.5182
+  ask_depth      shape=(30000, 5)  mean=+49.5672  std=5.5243
+  obi            shape=(30000, 5)  mean=+0.0000  std=0.0076
+  microprice     shape=(30000, 5)  mean=+10118.6476  std=1136.4527
+  mp_minus_mid   shape=(30000, 5)  mean=-0.0046  std=0.3925
+
+Same-product OBI(t) vs return(t+1) correlation (should be positive — buy-pressure leads price up):
+  OXYGEN_SHAKE_MORNING_BREATH     corr = -0.0489
+  OXYGEN_SHAKE_EVENING_BREATH     corr = -0.0485
+  OXYGEN_SHAKE_MINT               corr = -0.0456
+  OXYGEN_SHAKE_CHOCOLATE          corr = -0.0527
+  OXYGEN_SHAKE_GARLIC             corr = -0.0583
+
+================================================================================
+>>> CELL  35: display(Markdown("""## §16 — Non-linear dependence: distance correlation + mutual informat
+================================================================================
+## §16 — Non-linear dependence: distance correlation + mutual information
+
+Pearson only sees **linear** dependence. Two series can be tightly coupled but Pearson-zero (e.g. `b ≈ a²`, or co-volatility without co-direction). We add two model-free measures:
+
+- **Distance correlation (dCor)** — zero iff X and Y are independent. ∈ [0, 1]. Catches arbitrary monotone *and* non-monotone dependence.
+- **Mutual information (MI)** — model-free dependence in nats; large MI with small Pearson is a smoking gun for non-linearity.
+
+Both run on returns. Niche pairs = those with a large `dCor − |Pearson|` gap. Those are the ones where direct correlation is *lying to you*.
+=== Non-linear dependence (sorted by dCor − |Pearson|) ===
+    high gap = pair has structure that linear correlation misses
+                             a                            b  pearson_ret  abs_pearson    dcor      mi  dcor_minus_pearson
+0  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC       0.0130       0.0130  0.0587  0.0246              0.0457
+1  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE       0.0032       0.0032  0.0435  0.0000              0.0403
+2       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC       0.0068       0.0068  0.0448  0.0000              0.0380
+3            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC       0.0032       0.0032  0.0392  0.0173              0.0360
+4  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH       0.0088       0.0088  0.0428  0.0060              0.0340
+5  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC       0.0070       0.0070  0.0379  0.0000              0.0310
+6  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT       0.0072       0.0072  0.0378  0.0046              0.0307
+7            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE       0.0066       0.0066  0.0367  0.0000              0.0300
+8  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE       0.0092       0.0092  0.0376  0.0314              0.0285
+9  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT       0.0054       0.0054  0.0309  0.0129              0.0255
+
+================================================================================
+>>> CELL  36: display(Markdown("""## §17 — Tail / extreme co-movement (asymmetric, lagged)
+================================================================================
+## §17 — Tail / extreme co-movement (asymmetric, lagged)
+
+Average correlation hides what happens in the tails. Define a **tail event** for product `p` at tick `t` as `|return_p(t)| > q_p` where `q_p` is the per-product 95th-percentile of `|returns|`. Then per ordered pair (a → b):
+
+- `P(tail_b | tail_a)` — conditional probability of co-tail at the same tick
+- `lift_any = P(tail_b | tail_a) / P(tail_b)` — lift vs independence
+- Split into `up_b|up_a`, `dn_b|dn_a`, and the *cross-direction* `dn_b|up_a` to reveal **asymmetric** tail behaviour
+- Lagged: `P(tail_b at t+1 | tail_a at t)` — does an extreme in A *precede* an extreme in B?
+
+Tail dependence is invisible to Pearson, which averages the body of the distribution. A pair can have Pearson(ret)=0 but a 5× lift in joint extremes — a real, niche, tradeable shock-channel.
+=== Top contemporaneous tail co-movement (TAIL_PCT=95, lift > 1 = non-independent) ===
+                              a                            b  p(tail_a)  p(tail_b)  p(tail_b|tail_a)  lift_any  p(up_b|up_a)  p(dn_b|dn_a)  p(dn_b|up_a)  lift_lagged  asym_up_dn
+19          OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE      0.049      0.031             0.037     1.186         0.022         0.022         0.016        1.273       0.000
+15       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC      0.031      0.049             0.058     1.186         0.037         0.034         0.022        1.165       0.003
+17          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH      0.049      0.016             0.018     1.168         0.008         0.011         0.009        1.255      -0.003
+7   OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC      0.016      0.049             0.058     1.168         0.025         0.036         0.025        0.909      -0.011
+6   OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE      0.016      0.031             0.036     1.156         0.016         0.036         0.008        0.952      -0.019
+13       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH      0.031      0.016             0.018     1.156         0.009         0.017         0.006        1.359      -0.008
+0   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH      0.047      0.016             0.018     1.146         0.013         0.009         0.004        1.055       0.004
+4   OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH      0.016      0.047             0.053     1.146         0.037         0.027         0.029        0.779       0.010
+3   OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC      0.047      0.049             0.053     1.077         0.024         0.028         0.028        0.960      -0.004
+16          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_MORNING_BREATH      0.049      0.047             0.050     1.077         0.022         0.026         0.024        0.829      -0.004
+5   OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT      0.016      0.050             0.053     1.070         0.033         0.022         0.033        1.027       0.011
+9             OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH      0.050      0.016             0.017     1.070         0.011         0.007         0.005        1.198       0.004
+11            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC      0.050      0.049             0.046     0.937         0.024         0.017         0.024        0.896       0.007
+18          OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT      0.049      0.050             0.047     0.937         0.024         0.018         0.026        0.991       0.006
+12       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_MORNING_BREATH      0.031      0.047             0.043     0.914         0.022         0.013         0.015        0.891       0.009
+2   OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE      0.047      0.031             0.029     0.914         0.014         0.009         0.024        1.097       0.005
+8             OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH      0.050      0.047             0.040     0.863         0.020         0.015         0.023        0.978       0.006
+1   OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT      0.047      0.050             0.043     0.863         0.021         0.016         0.024        1.064       0.005
+14       OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT      0.031      0.050             0.043     0.853         0.022         0.023         0.024        0.896      -0.002
+10            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE      0.050      0.031             0.027     0.853         0.014         0.015         0.011        0.874      -0.001
+
+=== Asymmetric tail behaviour: |P(up_b|up_a) − P(dn_b|dn_a)| (top non-symmetric) ===
+                              a                            b  p(tail_a)  p(tail_b)  p(tail_b|tail_a)  lift_any  p(up_b|up_a)  p(dn_b|dn_a)  p(dn_b|up_a)  lift_lagged  asym_up_dn
+6   OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE      0.016      0.031             0.036     1.156         0.016         0.036         0.008        0.952      -0.019
+7   OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC      0.016      0.049             0.058     1.168         0.025         0.036         0.025        0.909      -0.011
+5   OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT      0.016      0.050             0.053     1.070         0.033         0.022         0.033        1.027       0.011
+4   OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH      0.016      0.047             0.053     1.146         0.037         0.027         0.029        0.779       0.010
+12       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_MORNING_BREATH      0.031      0.047             0.043     0.914         0.022         0.013         0.015        0.891       0.009
+13       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH      0.031      0.016             0.018     1.156         0.009         0.017         0.006        1.359      -0.008
+11            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC      0.050      0.049             0.046     0.937         0.024         0.017         0.024        0.896       0.007
+8             OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH      0.050      0.047             0.040     0.863         0.020         0.015         0.023        0.978       0.006
+18          OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT      0.049      0.050             0.047     0.937         0.024         0.018         0.026        0.991       0.006
+2   OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE      0.047      0.031             0.029     0.914         0.014         0.009         0.024        1.097       0.005
+
+=== Lagged tail predictability: tail in a at t → tail in b at t+1 ===
+                              a                            b  p(tail_a)  p(tail_b)  p(tail_b|tail_a)  lift_any  p(up_b|up_a)  p(dn_b|dn_a)  p(dn_b|up_a)  lift_lagged  asym_up_dn
+13       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH      0.031      0.016             0.018     1.156         0.009         0.017         0.006        1.359      -0.008
+19          OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE      0.049      0.031             0.037     1.186         0.022         0.022         0.016        1.273       0.000
+17          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH      0.049      0.016             0.018     1.168         0.008         0.011         0.009        1.255      -0.003
+9             OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH      0.050      0.016             0.017     1.070         0.011         0.007         0.005        1.198       0.004
+15       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC      0.031      0.049             0.058     1.186         0.037         0.034         0.022        1.165       0.003
+2   OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE      0.047      0.031             0.029     0.914         0.014         0.009         0.024        1.097       0.005
+1   OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT      0.047      0.050             0.043     0.863         0.021         0.016         0.024        1.064       0.005
+0   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH      0.047      0.016             0.018     1.146         0.013         0.009         0.004        1.055       0.004
+5   OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT      0.016      0.050             0.053     1.070         0.033         0.022         0.033        1.027       0.011
+18          OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT      0.049      0.050             0.047     0.937         0.024         0.018         0.026        0.991       0.006
+
+================================================================================
+>>> CELL  37: display(Markdown("""## §18 — Volatility-of-volatility cross-product correlation
+================================================================================
+## §18 — Volatility-of-volatility cross-product correlation
+
+Two products can have **low return-correlation** but their **volatility** moves together — they get loud at the same time. Mid-correlation misses this entirely.
+
+Compute correlation of:
+- `|returns|` (absolute returns — classical vol proxy)
+- `returns²` (variance contribution — emphasises tails)
+- Rolling realized vol (window=`WINDOW_FAST`)
+
+Niche pairs: low Pearson(ret) but high corr(|ret|) → **vol-cluster siblings**. Useful as a regime filter on §11 baskets — only enter pair-trades when the vol-sibling is calm, since a vol spike usually breaks the spread temporarily.
+=== Vol-correlation gap: corr(|ret|) − |Pearson(ret)| (high = vol cluster sibling) ===
+                             a                            b  pearson_ret  corr_abs_ret  corr_sq_ret  corr_roll_vol  vol_minus_ret
+0            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC       0.0032        0.0112       0.0086        -0.1595         0.0080
+1  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT       0.0054        0.0073       0.0048        -0.0532         0.0019
+2  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE       0.0032        0.0026       0.0018        -0.0529        -0.0006
+3  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC       0.0070        0.0043      -0.0072        -0.3476        -0.0026
+4       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC       0.0068        0.0009       0.0059         0.1519        -0.0059
+5  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE       0.0092        0.0002      -0.0012         0.1845        -0.0090
+6  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT       0.0072       -0.0047      -0.0055         0.1243        -0.0119
+7            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE       0.0066       -0.0089      -0.0104        -0.0489        -0.0155
+8  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC       0.0130       -0.0048      -0.0032        -0.4424        -0.0178
+9  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH       0.0088       -0.0151      -0.0039         0.0728        -0.0239
+
+================================================================================
+>>> CELL  38: display(Markdown("""## §19 — Sign-asymmetric lead-lag + Granger causality
+================================================================================
+## §19 — Sign-asymmetric lead-lag + Granger causality
+
+The §5 lead-lag is symmetric: it doesn't distinguish whether `a` leads `b` only on **up-moves** or only on **down-moves**. Real edges are often one-sided — e.g. when a variant gets bought aggressively, the others follow within a tick, but on sells they don't.
+
+We split returns:
+- `ra_up = max(ra, 0)` — masks all down-moves to zero
+- `ra_dn = min(ra, 0)` — masks all up-moves to zero
+
+and compute `corr(ra_*, rb.shift(-L))` separately. The gap `up_corr − dn_corr` is the **directional asymmetry** — if it's strongly non-zero, you have a sign-conditional lead.
+
+We then add **Granger causality F-tests** at lags 1, 5, 10. Granger has a known F-distribution under the null, so the p-values are interpretable for multiple-testing — unlike raw cross-correlation peaks.
+=== Asymmetric lead-lag at L=1 (sorted by |up − dn|) ===
+                              a                            b  lag  lead_corr_full  lead_corr_up_only  lead_corr_dn_only  asym_up_minus_dn
+0           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_MORNING_BREATH    1          0.0115             0.0147             0.0049            0.0098
+1        OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT    1         -0.0067            -0.0006            -0.0103            0.0097
+2   OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC    1         -0.0163            -0.0096            -0.0165            0.0069
+3             OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH    1         -0.0049            -0.0076            -0.0007           -0.0069
+4   OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT    1         -0.0065            -0.0080            -0.0024           -0.0056
+5           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH    1         -0.0053            -0.0022            -0.0068            0.0046
+6   OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE    1         -0.0053            -0.0020            -0.0065            0.0045
+7        OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_MORNING_BREATH    1         -0.0023            -0.0000            -0.0037            0.0037
+8   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH    1         -0.0154            -0.0115            -0.0149            0.0033
+9   OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE    1          0.0007             0.0023            -0.0011            0.0033
+10  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC    1         -0.0054            -0.0033            -0.0059            0.0026
+11       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH    1         -0.0006             0.0005            -0.0015            0.0020
+12          OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT    1          0.0045             0.0029             0.0048           -0.0018
+13       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC    1          0.0051             0.0050             0.0034            0.0017
+14            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH    1         -0.0111            -0.0104            -0.0087           -0.0016
+15  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT    1         -0.0062            -0.0060            -0.0046           -0.0014
+16            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC    1          0.0010             0.0014             0.0003            0.0011
+17            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE    1         -0.0051            -0.0039            -0.0048            0.0008
+18          OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE    1         -0.0030            -0.0022            -0.0030            0.0008
+19  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH    1          0.0119             0.0092             0.0099           -0.0008
+
+=== Granger causality (top 30 by lowest p) ===
+                          cause                       effect  lag    ssr_F  ssr_F_p
+35            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC   10  2.42404  0.00705
+13  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH    5  2.16520  0.05505
+34            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC    5  1.92111  0.08734
+1   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH    5  1.82299  0.10470
+11  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC   10  1.56994  0.10880
+46       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC    5  1.76807  0.11574
+32            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE   10  1.51427  0.12718
+39       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH    1  2.30508  0.12899
+0   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH    1  2.11264  0.14613
+14  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH   10  1.45822  0.14829
+57          OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE    1  2.00286  0.15704
+42       OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT    1  2.00083  0.15725
+45       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC    1  1.84949  0.17388
+47       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC   10  1.36689  0.18887
+51          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH    1  1.66120  0.19748
+59          OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE   10  1.31153  0.21753
+10  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC    5  1.33007  0.24809
+52          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH    5  1.26781  0.27473
+25            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH    5  1.22466  0.29452
+33            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC    1  1.09098  0.29629
+18  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE    1  1.04292  0.30717
+44       OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT   10  1.16301  0.31076
+24            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH    1  1.00573  0.31596
+22  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC    5  1.16670  0.32286
+43       OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT    5  1.14713  0.33290
+2   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH   10  1.12691  0.33712
+31            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE    5  1.10548  0.35504
+21  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC    1  0.78041  0.37704
+58          OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE    5  1.03057  0.39759
+7   OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE    5  0.93082  0.45960
+
+================================================================================
+>>> CELL  39: display(Markdown("""## §20 — Order-book imbalance → cross-product price predictability
+================================================================================
+## §20 — Order-book imbalance → cross-product price predictability
+
+OBI is a known short-horizon price predictor for the **same** product. Within a tightly correlated group, OBI in product A may **leak** information about product B *before* B's mid moves — quotes update in one variant and the rest follow.
+
+For each ordered pair (a → b) compute:
+
+`corr(obi[a]_t , Σ_{k=1..L} return[b]_{t+k})` for L ∈ {1, 5, 10, 20}
+
+Sign matters: `+OBI` (more bid depth) should predict positive `b`-returns if there is real cross-product information. We also do `spread[a] → |return[b]|` as a vol-prediction control: a widening spread in A often anticipates volatility in correlated B.
+=== Same-product OBI → forward returns (baseline self-predictability) ===
+                          a_obi                        b_ret  corr_lead_1  corr_lead_5  corr_lead_10  corr_lead_20  spread_a_to_absret_b_lead5  max_abs_lead
+0           OXYGEN_SHAKE_GARLIC          OXYGEN_SHAKE_GARLIC      -0.0583      -0.0222       -0.0154       -0.0100                      0.1239        0.0583
+8        OXYGEN_SHAKE_CHOCOLATE       OXYGEN_SHAKE_CHOCOLATE      -0.0527      -0.0275       -0.0271       -0.0267                      0.0762        0.0527
+12  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_MORNING_BREATH      -0.0489      -0.0175       -0.0075       -0.0035                      0.1031        0.0489
+18  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_EVENING_BREATH      -0.0485      -0.0222       -0.0172       -0.0100                     -0.0419        0.0485
+24            OXYGEN_SHAKE_MINT            OXYGEN_SHAKE_MINT      -0.0456      -0.0312       -0.0177       -0.0103                      0.0692        0.0456
+
+=== Cross-product OBI → forward returns (the niche signal) ===
+                          a_obi                        b_ret  corr_lead_1  corr_lead_5  corr_lead_10  corr_lead_20  spread_a_to_absret_b_lead5  max_abs_lead
+1   OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC      -0.0583      -0.0222       -0.0154       -0.0100                     -0.0781        0.0583
+2        OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC      -0.0583      -0.0222       -0.0154       -0.0100                      0.0784        0.0583
+3   OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC      -0.0583      -0.0222       -0.0154       -0.0100                     -0.0393        0.0583
+4             OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC      -0.0583      -0.0222       -0.0154       -0.0100                     -0.0399        0.0583
+5             OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE      -0.0527      -0.0275       -0.0271       -0.0267                     -0.0244        0.0527
+6           OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE      -0.0527      -0.0275       -0.0271       -0.0267                      0.0600        0.0527
+7   OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE      -0.0527      -0.0275       -0.0271       -0.0267                     -0.0358        0.0527
+9   OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE      -0.0527      -0.0275       -0.0271       -0.0267                      0.0041        0.0527
+10          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_MORNING_BREATH      -0.0489      -0.0175       -0.0075       -0.0035                     -0.0721        0.0489
+11       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_MORNING_BREATH      -0.0489      -0.0175       -0.0075       -0.0035                     -0.0472        0.0489
+13            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH      -0.0489      -0.0175       -0.0075       -0.0035                      0.0191        0.0489
+14  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH      -0.0489      -0.0175       -0.0075       -0.0035                      0.0009        0.0489
+15  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH      -0.0485      -0.0222       -0.0172       -0.0100                     -0.0259        0.0485
+16            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH      -0.0485      -0.0222       -0.0172       -0.0100                     -0.0281        0.0485
+17       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH      -0.0485      -0.0222       -0.0172       -0.0100                     -0.0017        0.0485
+19          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH      -0.0485      -0.0222       -0.0172       -0.0100                      0.0155        0.0485
+20       OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT      -0.0456      -0.0312       -0.0177       -0.0103                     -0.0128        0.0456
+21  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT      -0.0456      -0.0312       -0.0177       -0.0103                      0.0065        0.0456
+22          OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT      -0.0456      -0.0312       -0.0177       -0.0103                     -0.0222        0.0456
+23  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT      -0.0456      -0.0312       -0.0177       -0.0103                      0.0163        0.0456
+
+================================================================================
+>>> CELL  40: display(Markdown("""## §21 — Co-jump synchronization
+================================================================================
+## §21 — Co-jump synchronization
+
+Define a **jump** for product `p` at tick `t` as `|return_p(t)| > k · σ_p(t)` where `σ_p(t)` is the rolling std (k=4, window=500 ticks). Then per pair (a, b):
+
+- `n_a`, `n_b`: jump counts
+- `n_ab`: simultaneous jumps at the same tick
+- Expected under independence: `E[n_ab] = n_a · n_b / T`
+- `lift = n_ab / E[n_ab]`,    `z = (n_ab − E) / √E`
+- Lagged version: `a` jumps at `t`, `b` jumps at `t+1`
+
+A `lift >> 1` means the pair shares a shock channel — same news, same liquidity event, etc. A high *lagged* lift is the more interesting signal: it says A's jump is a **trigger** for B's next-tick jump.
+Per-product jump counts (k=4.0σ, window=500):
+product
+OXYGEN_SHAKE_MORNING_BREATH     0
+OXYGEN_SHAKE_EVENING_BREATH    54
+OXYGEN_SHAKE_MINT               1
+OXYGEN_SHAKE_CHOCOLATE         59
+OXYGEN_SHAKE_GARLIC             0
+
+Total usable ticks: 29,999
+
+=== Co-jump synchronization (lift > 1 = synced shocks) ===
+                             a                            b  n_a  n_b  n_ab_t0  exp_ab  cojump_lift_t0  cojump_z_t0  n_ab_lag1  cojump_lift_lag1  n_ba_lag1  cojump_lift_rev_lag1
+0  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT   54    1        0   0.002             0.0       -0.042          0               0.0          0                 0.000
+1  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE   54   59        0   0.106             0.0       -0.326          0               0.0          1                 9.416
+2            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE    1   59        0   0.002             0.0       -0.044          0               0.0          0                 0.000
+3  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH    0   54        0   0.000             NaN          NaN          0               NaN          0                   NaN
+4  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT    0    1        0   0.000             NaN          NaN          0               NaN          0                   NaN
+5  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE    0   59        0   0.000             NaN          NaN          0               NaN          0                   NaN
+6  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC    0    0        0   0.000             NaN          NaN          0               NaN          0                   NaN
+7  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC   54    0        0   0.000             NaN          NaN          0               NaN          0                   NaN
+8            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC    1    0        0   0.000             NaN          NaN          0               NaN          0                   NaN
+9       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC   59    0        0   0.000             NaN          NaN          0               NaN          0                   NaN
+
+================================================================================
+>>> CELL  41: display(Markdown("""## §22 — Signed trade-flow cross-effects
+================================================================================
+## §22 — Signed trade-flow cross-effects
+
+Trades are committed demand, not just quotes. We sign each trade Lee-Ready style:
+
+- `+qty` if `price ≥ ask₁` (aggressive buyer hit the ask)
+- `−qty` if `price ≤ bid₁` (aggressive seller hit the bid)
+- otherwise sign by `price` vs. mid (tick test)
+
+Aggregate signed flow into the same tick grid (per product), then test cross-product predictability:
+
+`corr(trade_flow[a]_t , return[b]_{t+L})` for L ∈ {0, 1, 5, 10}
+
+This is the **executed-flow** version of the cross-OBI test in §20 — quote OBI is *intent*, signed flow is *action*. They can disagree: lots of resting bids that don't get hit (high OBI, low flow) vs. quiet quotes that get crossed every tick (low OBI, high flow).
+Loaded 3,665 trades across 5 products on days [np.int64(2), np.int64(3), np.int64(4)]
+
+Sign breakdown:
+sign                          -1    1
+symbol                               
+OXYGEN_SHAKE_CHOCOLATE       375  358
+OXYGEN_SHAKE_EVENING_BREATH  375  358
+OXYGEN_SHAKE_GARLIC          375  358
+OXYGEN_SHAKE_MINT            375  358
+OXYGEN_SHAKE_MORNING_BREATH  375  358
+
+Per-product signed-flow stats:
+                             n_trades  net_flow  mean_abs  max_abs
+symbol                                                            
+OXYGEN_SHAKE_MORNING_BREATH       733     -45.0      0.06      4.0
+OXYGEN_SHAKE_EVENING_BREATH       733     -45.0      0.06      4.0
+OXYGEN_SHAKE_MINT                 733     -45.0      0.06      4.0
+OXYGEN_SHAKE_CHOCOLATE            733     -45.0      0.06      4.0
+OXYGEN_SHAKE_GARLIC               733     -45.0      0.06      4.0
+
+=== Signed flow(a) → return(b) at L ∈ {0,1,5,10} ===
+                         a_flow                        b_ret  corr_lead_0  corr_lead_1  corr_lead_5  corr_lead_10  max_abs_corr
+0             OXYGEN_SHAKE_MINT            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+1   OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+2           OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+3        OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+4   OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+5             OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+6           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+7        OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+8   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+9   OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+10            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+11  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+12  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+13       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+14          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+15  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+16            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+17       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+18  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+19          OXYGEN_SHAKE_GARLIC          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+20  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+21            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+22       OXYGEN_SHAKE_CHOCOLATE       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+23  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+24          OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+
+=== Cross only (a ≠ b) — true information leakage ===
+                         a_flow                        b_ret  corr_lead_0  corr_lead_1  corr_lead_5  corr_lead_10  max_abs_corr
+1   OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+2           OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+3        OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+4   OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT      -0.0732      -0.0078       0.0006        0.0168        0.0732
+5             OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+6           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+7        OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+9   OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH       0.0230      -0.0065       0.0502        0.0230        0.0502
+10            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+11  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+13       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+14          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH       0.0478      -0.0219      -0.0392       -0.0391        0.0478
+15  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+16            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+17       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+18  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC      -0.0035       0.0377       0.0245        0.0002        0.0377
+20  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+21            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+23  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+24          OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE      -0.0047       0.0253      -0.0241       -0.0017        0.0253
+
+================================================================================
+>>> CELL  42: display(Markdown("""## §23 — Cross-spectral coherence (frequency-domain)
+================================================================================
+## §23 — Cross-spectral coherence (frequency-domain)
+
+Coherence `C(f) = |P_xy(f)|² / (P_xx(f)·P_yy(f))` is the frequency-domain analogue of squared correlation. Pairs with the same time-domain Pearson can have very different coherence shapes:
+
+- High coherence at **high frequency** = co-moves on every tick (microstructure / shared liquidity)
+- High coherence at **low frequency** = co-trends over many ticks even when individual ticks decorrelate
+- A frequency band where coherence peaks isolates the *time scale* the relationship lives at — directly tells you the holding horizon
+
+We compute Welch's coherence per pair on returns and summarise by mean coherence in low / mid / high bands plus the peak.
+=== Cross-spectral coherence (Welch, nperseg=1024) ===
+                             a                            b  coh_low  coh_mid  coh_hi  coh_peak  coh_peak_freq  coh_peak_period_ticks
+0  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE   0.0193   0.0182  0.0215    0.1669         0.4512                 2.2165
+1  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT   0.0205   0.0218  0.0185    0.1273         0.3877                 2.5793
+2  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE   0.0190   0.0185  0.0191    0.1252         0.1914                 5.2245
+3            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC   0.0206   0.0200  0.0192    0.1168         0.4932                 2.0277
+4            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE   0.0194   0.0173  0.0187    0.1107         0.3057                 3.2716
+5  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC   0.0163   0.0173  0.0171    0.1100         0.1133                 8.8276
+6  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH   0.0225   0.0183  0.0174    0.1065         0.0342                29.2571
+7  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT   0.0215   0.0181  0.0183    0.1044         0.0264                37.9259
+8       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC   0.0195   0.0166  0.0183    0.1018         0.4336                 2.3063
+9  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC   0.0155   0.0155  0.0177    0.0775         0.4844                 2.0645
+
+================================================================================
+>>> CELL  43: display(Markdown("""## §24 — Niche dashboard + how to read
+================================================================================
+## §24 — Niche dashboard + how to read
+
+Compile the strongest **non-direct-correlation** signals from §16-§23 into one table. Each row is the top finding from one section. Use this as the entry point — drill into the underlying CSV for the full ranking.
+### Niche dashboard — strongest non-direct-correlation findings
+                        section                                                       what   score                                 metric
+0          §16 dCor − |Pearson|          OXYGEN_SHAKE_MORNING_BREATH ↔ OXYGEN_SHAKE_GARLIC  0.0457            dCor=0.059, |Pearson|=0.013
+1   §17 tail co-move (contemp.)               OXYGEN_SHAKE_GARLIC → OXYGEN_SHAKE_CHOCOLATE  1.1863                 P(tail_b|tail_a)=0.037
+2         §17 tail lead (lag 1)       OXYGEN_SHAKE_CHOCOLATE → OXYGEN_SHAKE_EVENING_BREATH  1.3595          P(tail_b@t+1 | tail_a@t) lift
+3       §18 vol-cluster sibling                    OXYGEN_SHAKE_MINT ↔ OXYGEN_SHAKE_GARLIC  0.0080  corr(|ret|)=0.011, Pearson(ret)=0.003
+4       §19 asymmetric lead-lag          OXYGEN_SHAKE_GARLIC → OXYGEN_SHAKE_MORNING_BREATH  0.0098                     up=0.015, dn=0.005
+5              §19 best Granger           OXYGEN_SHAKE_MINT ⇒ OXYGEN_SHAKE_GARLIC (lag 10)  2.1520                             p=7.05e-03
+6     §20 OBI(a) → ret(b) cross  OXYGEN_SHAKE_MORNING_BREATH obi → OXYGEN_SHAKE_GARLIC ret -0.0583                     corr_lead_1=-0.058
+7        §21 co-jump (contemp.)            OXYGEN_SHAKE_EVENING_BREATH ↔ OXYGEN_SHAKE_MINT  0.0000                         n_ab=0, z=-0.0
+8      §21 co-jump lead (lag 1)            OXYGEN_SHAKE_EVENING_BREATH → OXYGEN_SHAKE_MINT  0.0000                            n_ab_lag1=0
+9    §22 trade-flow(a) → ret(b)   OXYGEN_SHAKE_MORNING_BREATH flow → OXYGEN_SHAKE_MINT ret -0.0732                     corr_lead_0=-0.073
+10           §23 peak coherence       OXYGEN_SHAKE_EVENING_BREATH ↔ OXYGEN_SHAKE_CHOCOLATE  0.1669       peak f=0.4512, lo=0.019 hi=0.021
+11      §23 freq-band imbalance  OXYGEN_SHAKE_MORNING_BREATH ↔ OXYGEN_SHAKE_EVENING_BREATH  0.0051                  low=0.023, high=0.017
+
+### How to read these niche signals
+
+| Signal | What it means in trading | Where to look next |
+|---|---|---|
+| **High dCor, low Pearson (§16)** | Pair has structure but not linear — vol-coupling, regime-switch, or non-monotone | Pair scatter plots in §10; check feature transformations |
+| **Tail lift > 2 (§17)** | Extreme moves in A really do drag B. Asymmetric tail (`up_b\|up_a` ≠ `dn_b\|dn_a`) implies a tradeable directional leak | Build a "post-tail" event-study: when A jumps, what's the avg L+1..L+5 return of B? |
+| **Vol-cluster sibling (§18)** | Pair shares volatility regime but not direction — useful for **vol breakout** triggers | Use as a regime filter on the §11 integer baskets |
+| **Asymmetric lead-lag (§19)** | A leads B *only* one direction — one-sided liquidity / inventory effect | Trade only the asymmetric direction |
+| **Granger causality (§19)** | A's history improves prediction of B beyond B's own history. Confirmatory test for §5 lead-lag | Use before staking on a raw cross-corr peak |
+| **Cross-OBI lead (§20)** | A's quote imbalance leaks into B's price. Read A's book to predict B's next-tick move | At every tick where `obi_a` is extreme, take a directional bet on B |
+| **Co-jump lift (§21)** | When one jumps, the other jumps too. Lagged → A's jump triggers B's jump at t+1 | Use A's jump as a *trigger* for an immediate B trade |
+| **Trade-flow cross (§22)** | A's executed flow predicts B's return — stronger than quote OBI because flow is committed demand | Most promising for directional alpha; PnL-attribute vs §11 baskets |
+| **Coherence at high f (§23)** | Pair shares microstructure noise — bad for tick-pair-trading but fine for slow baskets | If `coh_low` >> `coh_hi`, the **slow** basket is the right unit |
+
+A real edge needs all three:
+1. Statistical significance after multiple-testing inflation (§16/§17/§21 each tested 10+ pairs)
+2. A residual / event-study plot with many round-trips (§13 logic)
+3. A plausible micro-explanation (you should be able to *say* why the relationship exists)
+
+
+================================================================================
+>>> CELL  45: display(Markdown("""## §25 — k-of-N tail confluence + multi-product jump event-study
+================================================================================
+## §25 — k-of-N tail confluence + multi-product jump event-study
+
+Pair-tail dependence (§17) catches 2-product co-extremes. The richer signal is **how many** of the 5 products are extreme together at the same tick — the **confluence count** `K(t) = Σᵢ 1{|ret_i(t)| > q_i}`. Under independence, `K(t) ~ Binomial(N, p)` where `p ≈ (100 − TAIL_PCT)/100`.
+
+We compare the empirical distribution of K to the binomial null:
+- `n_obs(k)` = ticks with exactly k tail products
+- `n_exp(k)` = expected under independence
+- `lift(k) = n_obs(k) / n_exp(k)` — high lift at large k = strong group-shock channel
+
+Then a **multi-product jump event-study**: for every tick where ANY product jumps, compute the average return of every product in the window [t−5, t+5]. Reveals the typical group response — whether others lead, lag, or react idiosyncratically — and quantifies the **conditional impulse** of each trigger.
+=== k-of-N tail confluence (TAIL_PCT=95, p_ind=0.050) ===
+    k = # products simultaneously in tail at the same tick
+   k  n_obs      n_exp   lift  z_score
+0  0  24638  23212.654  1.061   19.669
+1  1   4958   6108.593  0.812  -16.497
+2  2    390    643.010  0.607  -10.086
+3  3     12     33.843  0.355   -3.757
+4  4      1      0.891  1.123    0.116
+5  5      0      0.009  0.000   -0.097
+
+=== Jump event study (k=4.0σ trigger, ±5 ticks) ===
+    cumulative response after t=0 (post-jump drift in each response product per trigger)
+response                     OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH
+trigger                                                                                                                                              
+OXYGEN_SHAKE_CHOCOLATE                    -26.54237                     -0.16949              0.10169            1.44068                     -0.51695
+OXYGEN_SHAKE_EVENING_BREATH                 3.76852                     23.58333              6.62037            1.29630                      7.36111
+OXYGEN_SHAKE_MINT                          10.00000                     30.00000            -10.50000          -11.00000                      2.50000
+
+================================================================================
+>>> CELL  46: display(Markdown("""## §26 — Cross-sectional dispersion mean-reversion
+================================================================================
+## §26 — Cross-sectional dispersion mean-reversion
+
+The classic multi-product strategy: at each tick, compute each product's z-score within the cross-section and bet on reversion.
+
+1. Z-score each product's mid: `z_i(t) = (mid_i(t) − μ_i) / σ_i` (per-product time normalisation)
+2. Cross-sectional mean and std at tick t: `cs_mean(t) = mean_i z_i(t)`,  `cs_std(t) = stdev_i z_i(t)`
+3. **Cross-sectional position** of product i: `r_i(t) = (z_i(t) − cs_mean(t)) / cs_std(t)`
+
+When `|r_i(t)|` is large, i is the group **outlier**. Hypothesis: outliers mean-revert toward the group. The trade is **(short i) vs. (long equal-weight basket of the other N−1)** — automatically integer-friendly because the basket weight is uniform.
+
+We measure: autocorrelation of `r_i(t)`, ADF p-value, half-life. Low ADF p + short half-life = a tradeable group-relative-value edge.
+=== Cross-sectional dispersion: each product as group outlier ===
+                       product  r_xs_std  r_xs_acf_lag1  r_xs_adf_p  r_xs_half_life  naive_resid_adf_p  naive_resid_half_life
+0  OXYGEN_SHAKE_EVENING_BREATH    0.9981         0.9997      0.2191       2108.4914             0.2948              2639.3558
+1          OXYGEN_SHAKE_GARLIC    0.8354         0.9998      0.2738       2678.4844             0.4849              5907.4340
+2       OXYGEN_SHAKE_CHOCOLATE    0.8827         0.9998      0.5366       3571.3784             0.3417              2422.6610
+3            OXYGEN_SHAKE_MINT    1.0419         0.9998      0.5473       3747.3616             0.5552              4874.8108
+4  OXYGEN_SHAKE_MORNING_BREATH    1.1727         0.9999      0.8175       9614.2914             0.8884             15017.0971
+
+================================================================================
+>>> CELL  47: display(Markdown("""## §27 — Johansen multi-product cointegration
+================================================================================
+## §27 — Johansen multi-product cointegration
+
+Engle-Granger (used in §6) tests pairs. For a 5-product system the right tool is the **Johansen test**, which finds the **rank** of the cointegration system — i.e. *how many independent stationary linear combinations* exist:
+
+- Rank r = 0: no cointegration (random-walk system)
+- Rank r = 1: a single shared stationary basket
+- Rank r ∈ {2, 3, 4}: multiple independent stationary baskets (rich relative-value structure)
+- Rank r = 5: the level itself is stationary (rare)
+
+For each rank r we report the **trace statistic** with its 95% critical value. The largest r that rejects H₀(r ≤ k) is the system's cointegration rank. Each cointegrating eigenvector is a multi-product spread that mean-reverts — so rank-r systems have r independent spreads to trade in parallel.
+=== Johansen trace test (reject H0:r≤k if trace_stat > crit_95) ===
+   r ≤  trace_stat  crit_90  crit_95  crit_99  max_eig_stat  max_eig_crit_95
+0    0      45.130   65.820   69.819   77.820        18.864           33.878
+1    1      26.266   44.493   47.854   54.682        15.778           27.586
+2    2      10.488   27.067   29.796   35.463         5.116           21.131
+3    3       5.372   13.429   15.494   19.935         4.553           14.264
+4    4       0.820    2.706    3.842    6.635         0.820            3.842
+
+Inferred cointegration rank (trace test, 95% CV): r = 0
+
+=== Cointegrating eigenvectors (cols = baskets, rows = products) ===
+                                 v1      v2      v3      v4      v5
+OXYGEN_SHAKE_MORNING_BREATH  0.0007  0.0012 -0.0016  0.0003  0.0004
+OXYGEN_SHAKE_EVENING_BREATH  0.0009  0.0027 -0.0005 -0.0013 -0.0011
+OXYGEN_SHAKE_MINT            0.0002  0.0014  0.0007  0.0013 -0.0010
+OXYGEN_SHAKE_CHOCOLATE      -0.0023 -0.0003 -0.0006  0.0004 -0.0004
+OXYGEN_SHAKE_GARLIC          0.0015  0.0005 -0.0007  0.0002 -0.0007
+
+=== Johansen baskets — ADF on each eigenvector spread ===
+  eigvec                                                                                                                                                                           weights  basket_std     adf_p     half_life
+0     v1     {'OXYGEN_SHAKE_MORNING_BREATH': 0.0007, 'OXYGEN_SHAKE_EVENING_BREATH': 0.0009, 'OXYGEN_SHAKE_MINT': 0.0002, 'OXYGEN_SHAKE_CHOCOLATE': -0.0023, 'OXYGEN_SHAKE_GARLIC': 0.0015}    1.000807  0.004186    945.592513
+1     v2     {'OXYGEN_SHAKE_MORNING_BREATH': 0.0012, 'OXYGEN_SHAKE_EVENING_BREATH': 0.0027, 'OXYGEN_SHAKE_MINT': 0.0014, 'OXYGEN_SHAKE_CHOCOLATE': -0.0003, 'OXYGEN_SHAKE_GARLIC': 0.0005}    1.000858  0.077913   1106.226297
+2     v3  {'OXYGEN_SHAKE_MORNING_BREATH': -0.0016, 'OXYGEN_SHAKE_EVENING_BREATH': -0.0005, 'OXYGEN_SHAKE_MINT': 0.0007, 'OXYGEN_SHAKE_CHOCOLATE': -0.0006, 'OXYGEN_SHAKE_GARLIC': -0.0007}    1.000548  0.423451   3207.824208
+3     v4     {'OXYGEN_SHAKE_MORNING_BREATH': 0.0003, 'OXYGEN_SHAKE_EVENING_BREATH': -0.0013, 'OXYGEN_SHAKE_MINT': 0.0013, 'OXYGEN_SHAKE_CHOCOLATE': 0.0004, 'OXYGEN_SHAKE_GARLIC': 0.0002}    1.000349  0.483857   3469.868421
+4     v5   {'OXYGEN_SHAKE_MORNING_BREATH': 0.0004, 'OXYGEN_SHAKE_EVENING_BREATH': -0.0011, 'OXYGEN_SHAKE_MINT': -0.001, 'OXYGEN_SHAKE_CHOCOLATE': -0.0004, 'OXYGEN_SHAKE_GARLIC': -0.0007}    1.000591  0.897766  10206.819801
+
+================================================================================
+>>> CELL  48: display(Markdown("""## §28 — Sparse vector autoregression (Lasso-VAR) — directed lead-lag 
+================================================================================
+## §28 — Sparse vector autoregression (Lasso-VAR) — directed lead-lag network
+
+A vector autoregression `r(t) = A_1 r(t−1) + A_2 r(t−2) + … + A_L r(t−L) + ε` describes the entire 5-product return system. With **Lasso** regularisation, most entries of `A_l` are forced to zero, leaving only the **directed edges** (i, j, lag) where one product's lag genuinely improves prediction of another's return — and crucially, edges that survive after **controlling for all other products simultaneously**.
+
+This is much stronger than the §5 pair-wise lead-lag because it controls for confounds: a Pearson lead might be entirely mediated through a third variant. Lasso strips those mediated edges away and leaves the irreducible network.
+Fitting LassoCV per target  (n=10000, p=25, lags=1..5) ...
+
+Lasso-VAR R² per target (in-sample):
+  OXYGEN_SHAKE_MORNING_BREATH     R² = +0.0000
+  OXYGEN_SHAKE_EVENING_BREATH     R² = +0.0140
+  OXYGEN_SHAKE_MINT               R² = +0.0012
+  OXYGEN_SHAKE_CHOCOLATE          R² = +0.0052
+  OXYGEN_SHAKE_GARLIC             R² = +0.0016
+
+=== Lasso-VAR directed network (cross-edges only, sorted by |coef|) ===
+                          cause                       effect  lag     coef  abs_coef
+0        OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC    3  0.01173   0.01173
+1           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH    4  0.00976   0.00976
+2   OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT    3 -0.00919   0.00919
+3           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH    2 -0.00879   0.00879
+4        OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC    1  0.00874   0.00874
+5   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH    1 -0.00866   0.00866
+6        OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC    5  0.00805   0.00805
+7        OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH    3 -0.00721   0.00721
+8   OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC    4 -0.00710   0.00710
+9   OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC    2 -0.00634   0.00634
+10            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH    1 -0.00546   0.00546
+11  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC    1 -0.00443   0.00443
+12          OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH    5 -0.00294   0.00294
+13       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH    5 -0.00264   0.00264
+14  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH    2 -0.00263   0.00263
+15       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH    2 -0.00250   0.00250
+16            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC    3 -0.00041   0.00041
+
+================================================================================
+>>> CELL  49: display(Markdown("""## §29 — Partial correlations + minimum spanning tree
+================================================================================
+## §29 — Partial correlations + minimum spanning tree
+
+Pearson correlation between A and B can be **entirely mediated** through a third variable C — A and B only co-move because both move with C. **Partial correlation** removes this confounding: `partial_corr(A, B | rest) = corr` of the residuals after regressing both A and B on the other products.
+
+This isolates **direct** dependencies. We then build the **minimum spanning tree** using `1 − |partial_corr|` as edge length: the MST is the skeleton of *direct* relationships in the group.
+
+Graph-theoretic insight:
+- **Hub** (high MST degree) = group's information carrier
+- **Leaf** = follower; its idiosyncratic deviation is the most likely thing to mean-revert
+=== Partial correlation matrix (corr after removing all other products) ===
+                             OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_GARLIC
+OXYGEN_SHAKE_MORNING_BREATH                       1.0000                       0.0087             0.0071                  0.0030               0.0129
+OXYGEN_SHAKE_EVENING_BREATH                       0.0087                       1.0000             0.0052                  0.0091               0.0068
+OXYGEN_SHAKE_MINT                                 0.0071                       0.0052             1.0000                  0.0066               0.0030
+OXYGEN_SHAKE_CHOCOLATE                            0.0030                       0.0091             0.0066                  1.0000               0.0067
+OXYGEN_SHAKE_GARLIC                               0.0129                       0.0068             0.0030                  0.0067               1.0000
+
+=== Minimum spanning tree edges (distance = 1 − |partial_corr|) ===
+                             a                            b  partial_corr  edge_len
+0  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH        0.0087    0.9913
+1  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT        0.0071    0.9929
+2  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC        0.0129    0.9871
+3  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE        0.0091    0.9909
+
+=== Node degree in MST (highest = group's information hub) ===
+OXYGEN_SHAKE_MORNING_BREATH    3
+OXYGEN_SHAKE_EVENING_BREATH    2
+OXYGEN_SHAKE_MINT              1
+OXYGEN_SHAKE_CHOCOLATE         1
+OXYGEN_SHAKE_GARLIC            1
+
+=== Pearson minus partial: high = pair correlation is mostly mediated through others ===
+                             a                            b  pearson  partial    drop
+0  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE   0.0032   0.0030  0.0002
+1  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC   0.0070   0.0068  0.0002
+2            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC   0.0032   0.0030  0.0002
+3  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH   0.0088   0.0087  0.0002
+4  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT   0.0054   0.0052  0.0001
+5       OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC   0.0068   0.0067  0.0001
+6  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE   0.0092   0.0091  0.0001
+7  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT   0.0072   0.0071  0.0001
+8  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC   0.0130   0.0129  0.0001
+9            OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE   0.0066   0.0066  0.0001
+
+================================================================================
+>>> CELL  50: display(Markdown("""## §30 — Diebold-Yilmaz volatility / return spillover
+================================================================================
+## §30 — Diebold-Yilmaz volatility / return spillover
+
+Fit a VAR(L) on returns. From the variance decomposition (FEVD) at horizon H, compute:
+
+- **`from(i, j)`** = % of i's H-step forecast variance attributable to shocks in j
+- **Net spillover from j to i**: `from(i,j) − from(j,i)` — directional risk transmission
+- **Total spillover index**: average of all off-diagonal entries — a single scalar saying how interconnected the group is
+
+In a stat-arb lens, products with large *net-into* spillover are **followers** (absorbing risk from the rest); products with large *net-out* are **leaders**. Trading: short followers vs. long leaders during shocks; reverse in calm. Total index swings indicate regime changes.
+=== FEVD at H=10 (% of i's forecast variance from j's shocks) ===
+                             OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_GARLIC
+OXYGEN_SHAKE_MORNING_BREATH                        99.92                         0.02               0.01                    0.02                 0.02
+OXYGEN_SHAKE_EVENING_BREATH                         0.04                        99.90               0.02                    0.02                 0.01
+OXYGEN_SHAKE_MINT                                   0.02                         0.01              99.95                    0.01                 0.01
+OXYGEN_SHAKE_CHOCOLATE                              0.01                         0.02               0.02                   99.96                 0.00
+OXYGEN_SHAKE_GARLIC                                 0.03                         0.03               0.00                    0.02                99.92
+
+=== Spillover summary (total index = 0.07%) ===
+                             from_others  to_others   net
+OXYGEN_SHAKE_MORNING_BREATH         0.08       0.09  0.01
+OXYGEN_SHAKE_EVENING_BREATH         0.10       0.08 -0.02
+OXYGEN_SHAKE_MINT                   0.05       0.05  0.00
+OXYGEN_SHAKE_CHOCOLATE              0.04       0.07  0.03
+OXYGEN_SHAKE_GARLIC                 0.08       0.05 -0.03
+
+  net > 0  → product transmits risk to the group  (LEADER)
+  net < 0  → product receives risk from the group   (FOLLOWER)
+
+================================================================================
+>>> CELL  51: display(Markdown("""## §31 — Principal-component cross-prediction (factor lead-lag)
+================================================================================
+## §31 — Principal-component cross-prediction (factor lead-lag)
+
+§8 showed PCA decomposes the group into 5 orthogonal factors. PC1 is the dominant common factor (the "trend"); PC2..PC5 are residual axes.
+
+A subtle multi-product edge: does **PC2(t) predict PC1(t+L)**, or vice versa? The factors are *contemporaneously* orthogonal by construction, but lagged relationships can persist. If a residual factor leads the dominant factor, the residual is an **early-warning** signal for the trend.
+
+We compute `corr(PC_i(t), PC_j(t+L))` for L ∈ {1, 5, 10, 50}, all (i, j) pairs.
+=== Cross-PC lead-lag (sorted by |corr|; remember contemporaneous corr is exactly 0) ===
+   cause_pc effect_pc  lag     corr  abs_corr
+0       PC2       PC1    1 -0.01823   0.01823
+1       PC3       PC4    5  0.01640   0.01640
+2       PC2       PC4    1  0.01546   0.01546
+3       PC4       PC2   50  0.01502   0.01502
+4       PC2       PC3    5  0.01485   0.01485
+5       PC1       PC2    5 -0.01409   0.01409
+6       PC4       PC1    5  0.01324   0.01324
+7       PC1       PC4    1  0.01302   0.01302
+8       PC2       PC4    5 -0.01273   0.01273
+9       PC3       PC2    1  0.01214   0.01214
+10      PC5       PC1   10 -0.01189   0.01189
+11      PC1       PC2    1 -0.01115   0.01115
+12      PC3       PC1    1  0.01030   0.01030
+13      PC3       PC4   50 -0.01006   0.01006
+14      PC3       PC2   10 -0.00958   0.00958
+15      PC3       PC4    1 -0.00910   0.00910
+16      PC2       PC3    1  0.00909   0.00909
+17      PC5       PC1    5 -0.00808   0.00808
+18      PC4       PC3   10 -0.00805   0.00805
+19      PC4       PC2    1 -0.00796   0.00796
+20      PC2       PC4   10  0.00760   0.00760
+21      PC5       PC4   50  0.00756   0.00756
+22      PC1       PC2   50 -0.00726   0.00726
+23      PC1       PC4   10 -0.00714   0.00714
+24      PC3       PC1   10  0.00711   0.00711
+25      PC2       PC5    1 -0.00694   0.00694
+26      PC5       PC2    1 -0.00687   0.00687
+27      PC4       PC5   50 -0.00685   0.00685
+28      PC2       PC5   10 -0.00682   0.00682
+29      PC4       PC3   50  0.00658   0.00658
+30      PC4       PC3    1  0.00610   0.00610
+31      PC4       PC5   10 -0.00576   0.00576
+32      PC1       PC5   10 -0.00552   0.00552
+33      PC4       PC5    1 -0.00496   0.00496
+34      PC4       PC1    1 -0.00471   0.00471
+35      PC4       PC3    5  0.00468   0.00468
+36      PC4       PC5    5  0.00464   0.00464
+37      PC5       PC3   50 -0.00447   0.00447
+38      PC5       PC2   10  0.00444   0.00444
+39      PC1       PC5    5  0.00441   0.00441
+
+================================================================================
+>>> CELL  52: display(Markdown("""## §32 — Regime-conditional baskets — recompute by regime
+================================================================================
+## §32 — Regime-conditional baskets — recompute by regime
+
+A basket can be stationary in calm regimes and break in vol regimes (or vice versa). We split ticks into regimes by three group-level state variables and recompute spread stationarity within each:
+
+- **Vol regime**: group-mean of rolling `|return|` (top tercile = high vol)
+- **Dispersion regime**: cross-sectional std of z-scored mids (high = group fragmenting)
+- **|OBI| regime**: average |OBI| across products (high = group is one-sided)
+
+For the §6 best pair AND the §11 best K=2 integer basket we report the spread's ADF p-value inside each regime tercile. A spread that's stationary in low-vol but not high-vol is a **regime-conditional** trade: enter only when the conditioning variable is in the right state.
+§6 best pair: OXYGEN_SHAKE_CHOCOLATE − 0.380·OXYGEN_SHAKE_GARLIC
+
+§11 best K=2 integer basket: OXYGEN_SHAKE_GARLIC + OXYGEN_SHAKE_MORNING_BREATH − OXYGEN_SHAKE_CHOCOLATE
+
+§26 best naive dispersion residual: OXYGEN_SHAKE_EVENING_BREATH − mean(others)
+
+=== Regime-conditional ADF on the strongest spreads ===
+    regime_var regime  n_ticks  spread_mean  spread_std   adf_p  half_life         spread_id
+0          vol    low     9871    4988.1296    448.2360  0.1212   715.4550           §6_pair
+1          vol    mid    10183    4908.3864    313.3253  0.0024   340.9939           §6_pair
+2          vol   high     9896    5184.9006    453.3371  0.1412   704.7942           §6_pair
+3   dispersion    low     9900    4722.3456    130.5174  0.0012   200.7356           §6_pair
+4   dispersion    mid    10200    4934.1228    259.7179  0.0705   355.7413           §6_pair
+5   dispersion   high     9900    5430.5957    451.7192  0.3380   952.9220           §6_pair
+6        |obi|   high    30000    5028.0724    428.0218  0.0440  1418.5075           §6_pair
+7          vol    low     9871   12166.2130    844.6496  0.0814   750.0175            §11_K2
+8          vol    mid    10183   12456.4209    570.5457  0.0010   345.6789            §11_K2
+9          vol   high     9896   12494.3760    655.8481  0.0069   466.7804            §11_K2
+10  dispersion    low     9900   12516.8853    445.9532  0.2277   687.1245            §11_K2
+11  dispersion    mid    10200   12491.3921    650.0597  0.3258   704.3108            §11_K2
+12  dispersion   high     9900   12095.6623    908.2503  0.1504   835.0373            §11_K2
+13       |obi|   high    30000   12369.2140    720.0436  0.0103  1310.1496            §11_K2
+14         vol    low     9871    -908.1806    617.4042  0.4601  1241.5277  §26_ENING_BREATH
+15         vol    mid    10183   -1053.0939    519.9422  0.1413   811.8951  §26_ENING_BREATH
+16         vol   high     9896   -1219.1966    538.9465  0.1372   806.3807  §26_ENING_BREATH
+17  dispersion    low     9900    -962.7197    271.7274  0.1939   668.1051  §26_ENING_BREATH
+18  dispersion    mid    10200   -1146.0025    571.1430  0.2461  1132.0884  §26_ENING_BREATH
+19  dispersion   high     9900   -1063.9643    758.6302  0.2922   912.4154  §26_ENING_BREATH
+20       |obi|   high    30000   -1058.4466    575.1659  0.2948  2639.3558  §26_ENING_BREATH
+
+================================================================================
+>>> CELL  53: display(Markdown("""## §33 — Trade-flow cross-excitation (proto-Hawkes)
+================================================================================
+## §33 — Trade-flow cross-excitation (proto-Hawkes)
+
+A full Hawkes model is overkill, but we can capture the same idea cheaply. Define **trade arrival rate** `λ_p(t)` = trade count in [t−w, t] per product. Then per ordered pair (a, b):
+
+`corr(λ_a(t), λ_b(t+L))` for L ∈ {0, 1, 5, 10, 20}
+
+If A's recent burst predicts B's near-future burst, we have **cross-excitation** — A's order flow is *triggering* B's. Burst-trading bots often quote-stuff a leader and the followers' bots respond automatically.
+
+We compute:
+- **Arrival-rate** correlation (unsigned trade count)
+- **Signed-flow** correlation (signed by Lee-Ready from §22)
+
+Big difference between the two = bots react to *any* activity in A but don't (or do) match A's direction.
+Arrival-rate panel (rolling 50-tick count): shape=(30000, 5)
+Per-product avg arrival rate (trades / window):
+symbol
+OXYGEN_SHAKE_MORNING_BREATH    1.219
+OXYGEN_SHAKE_EVENING_BREATH    1.219
+OXYGEN_SHAKE_MINT              1.219
+OXYGEN_SHAKE_CHOCOLATE         1.219
+OXYGEN_SHAKE_GARLIC            1.219
+
+=== Cross-excitation top (window=50, sorted by max |rate-corr|) ===
+                        a_burst                      b_burst  rate_corr_lead_0  signed_corr_lead_0  rate_corr_lead_1  signed_corr_lead_1  rate_corr_lead_5  signed_corr_lead_5  rate_corr_lead_10  signed_corr_lead_10  rate_corr_lead_20  signed_corr_lead_20  max_rate_abs  max_signed_abs
+0   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_MORNING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+1             OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+2           OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+3           OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+4           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+5           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_MORNING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+6        OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+7        OXYGEN_SHAKE_CHOCOLATE       OXYGEN_SHAKE_CHOCOLATE               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+8        OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+9        OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+10       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_MORNING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+11            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+12            OXYGEN_SHAKE_MINT            OXYGEN_SHAKE_MINT               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+13  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+14            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+15            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+16  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+17  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+18  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+19  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_EVENING_BREATH               1.0                 1.0             0.978               0.981             0.891               0.905              0.789                0.809              0.587                0.606           1.0             1.0
+
+=== Cross-only (a ≠ b) — pure cross-excitation (rates) ===
+                        a_burst                      b_burst  rate_corr_lead_0  rate_corr_lead_1  rate_corr_lead_5  rate_corr_lead_10  rate_corr_lead_20  max_rate_abs
+1             OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE               1.0             0.978             0.891              0.789              0.587           1.0
+2           OXYGEN_SHAKE_GARLIC       OXYGEN_SHAKE_CHOCOLATE               1.0             0.978             0.891              0.789              0.587           1.0
+3           OXYGEN_SHAKE_GARLIC            OXYGEN_SHAKE_MINT               1.0             0.978             0.891              0.789              0.587           1.0
+4           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_EVENING_BREATH               1.0             0.978             0.891              0.789              0.587           1.0
+5           OXYGEN_SHAKE_GARLIC  OXYGEN_SHAKE_MORNING_BREATH               1.0             0.978             0.891              0.789              0.587           1.0
+6        OXYGEN_SHAKE_CHOCOLATE          OXYGEN_SHAKE_GARLIC               1.0             0.978             0.891              0.789              0.587           1.0
+8        OXYGEN_SHAKE_CHOCOLATE            OXYGEN_SHAKE_MINT               1.0             0.978             0.891              0.789              0.587           1.0
+9        OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_EVENING_BREATH               1.0             0.978             0.891              0.789              0.587           1.0
+10       OXYGEN_SHAKE_CHOCOLATE  OXYGEN_SHAKE_MORNING_BREATH               1.0             0.978             0.891              0.789              0.587           1.0
+11            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC               1.0             0.978             0.891              0.789              0.587           1.0
+13  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH               1.0             0.978             0.891              0.789              0.587           1.0
+14            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH               1.0             0.978             0.891              0.789              0.587           1.0
+15            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH               1.0             0.978             0.891              0.789              0.587           1.0
+16  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC               1.0             0.978             0.891              0.789              0.587           1.0
+17  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE               1.0             0.978             0.891              0.789              0.587           1.0
+18  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT               1.0             0.978             0.891              0.789              0.587           1.0
+20  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH               1.0             0.978             0.891              0.789              0.587           1.0
+21  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC               1.0             0.978             0.891              0.789              0.587           1.0
+22  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE               1.0             0.978             0.891              0.789              0.587           1.0
+23  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT               1.0             0.978             0.891              0.789              0.587           1.0
+
+=== Where signed-flow lead is much stronger than arrival-rate lead ===
+                        a_burst                      b_burst  max_rate_abs  max_signed_abs  sign_minus_rate_gap
+0   OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_MORNING_BREATH           1.0             1.0                  0.0
+13  OXYGEN_SHAKE_MORNING_BREATH  OXYGEN_SHAKE_EVENING_BREATH           1.0             1.0                  0.0
+23  OXYGEN_SHAKE_MORNING_BREATH            OXYGEN_SHAKE_MINT           1.0             1.0                  0.0
+22  OXYGEN_SHAKE_MORNING_BREATH       OXYGEN_SHAKE_CHOCOLATE           1.0             1.0                  0.0
+21  OXYGEN_SHAKE_MORNING_BREATH          OXYGEN_SHAKE_GARLIC           1.0             1.0                  0.0
+20  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_MORNING_BREATH           1.0             1.0                  0.0
+19  OXYGEN_SHAKE_EVENING_BREATH  OXYGEN_SHAKE_EVENING_BREATH           1.0             1.0                  0.0
+18  OXYGEN_SHAKE_EVENING_BREATH            OXYGEN_SHAKE_MINT           1.0             1.0                  0.0
+17  OXYGEN_SHAKE_EVENING_BREATH       OXYGEN_SHAKE_CHOCOLATE           1.0             1.0                  0.0
+16  OXYGEN_SHAKE_EVENING_BREATH          OXYGEN_SHAKE_GARLIC           1.0             1.0                  0.0
+15            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_MORNING_BREATH           1.0             1.0                  0.0
+14            OXYGEN_SHAKE_MINT  OXYGEN_SHAKE_EVENING_BREATH           1.0             1.0                  0.0
+12            OXYGEN_SHAKE_MINT            OXYGEN_SHAKE_MINT           1.0             1.0                  0.0
+1             OXYGEN_SHAKE_MINT       OXYGEN_SHAKE_CHOCOLATE           1.0             1.0                  0.0
+11            OXYGEN_SHAKE_MINT          OXYGEN_SHAKE_GARLIC           1.0             1.0                  0.0
+
+================================================================================
+>>> CELL  54: display(Markdown("""## §34 — Multi-product niche dashboard + how to read
+================================================================================
+## §34 — Multi-product niche dashboard + how to read
+
+Roll up the strongest **multi-product** findings from §25-§33 — the strategies that genuinely use the whole 5-product system, not just pairs.
+### Multi-product niche dashboard — strongest §25-§33 findings
+                      section                                                  what   score                                         metric
+0  §25 k-of-N tail confluence                        k=4 simultaneous tail products  1.1228                         obs=1, exp=0.89, z=0.1
+1      §26 dispersion outlier                           OXYGEN_SHAKE_EVENING_BREATH  0.6594      ADF p=0.219, half-life=2108.4914168230803
+2         §27 Johansen basket                                                        2.3782     ADF p=0.00419, half-life=945.5925128461856
+3      §28 Lasso-VAR top edge  OXYGEN_SHAKE_CHOCOLATE → OXYGEN_SHAKE_GARLIC (lag 3)  0.0117                                    coef=0.0117
+4    §29 partial-corr MST top     OXYGEN_SHAKE_MORNING_BREATH ↔ OXYGEN_SHAKE_GARLIC  0.0129                             partial_corr=0.013
+5          §30 top net leader                                OXYGEN_SHAKE_CHOCOLATE  0.0300                             to=0.1%, from=0.0%
+6        §30 top net follower                                   OXYGEN_SHAKE_GARLIC  0.0300                             to=0.1%, from=0.1%
+7           §31 PC cross-lead                                     PC2 → PC1 (lag 1)  0.0182                                   corr=-0.0182
+8      §32 regime-best basket                                               vol=mid  2.9839  ADF p=0.00104, n=10183, hl=345.67886788951125
+9        §33 trade-burst lead            OXYGEN_SHAKE_MINT → OXYGEN_SHAKE_CHOCOLATE  1.0000                            max rate-corr=1.000
+
+### Reading these multi-product signals
+
+| Signal | What it gives you | Trading lens |
+|---|---|---|
+| **§25 k-of-N tail** | Empirical distribution of "how many products are extreme at the same tick" vs. binomial null. Lift at high k = group shock channel | When ≥3 products are simultaneously extreme, position-size *down* on baskets — your "spread" probably broke. Use k as a regime gate |
+| **§26 dispersion outlier** | Per-product cross-sectional z-position. Stationary → outliers mean-revert toward the group | Short the outlier vs. equal-weight basket of the others. Built-in integer weights, naturally hedged |
+| **§27 Johansen** | Number of independent stationary baskets in the 5-product system + eigenvector basket weights | Trade *each* cointegrating eigenvector as an independent spread (orthogonal P&L by construction) |
+| **§28 Lasso-VAR** | Sparse directed lead-lag network. Edges that survive Lasso are *direct*, not mediated | Use as the conditional set when constructing alpha — only add features that survive; combine forecasts at lag 1 |
+| **§29 Partial-corr MST** | Skeleton of direct dependencies. Hub = group's information carrier; leaves = followers | Trade leaves vs. hub: their idiosyncratic deviation is most likely to revert |
+| **§30 DY spillover** | Per-product %-contribution to others' forecast variance. Net leader vs. net follower | Long leaders / short followers during shocks; reverse in calm. Total spillover index is a regime indicator |
+| **§31 PC cross-lead** | PCs are contemporaneously orthogonal but can lead each other | If PC2 leads PC1, PC2 is an early-warning signal for the trend factor — trade with PC2's sign |
+| **§32 Regime baskets** | Stationarity of the §6 best pair conditional on group-vol / dispersion / OBI regime | Only enter the pair-trade in the regime where it's stationary. Halve size in border regimes |
+| **§33 Cross-excitation** | Lagged trade-burst correlation. A's burst → B's near-future burst = bot mirroring | Trigger an immediate B trade off A's burst; expect tighter window than §22 flow |
+
+### Strategy ladder — multi-product (least to most ambitious)
+
+1. **Outlier reversion (§26)** — single signal, single trade per outlier. Easiest to deploy, integer weights, no hedge ratio fitting needed.
+2. **Cointegrating eigenvectors (§27)** — multiple orthogonal spreads at once. Requires Johansen rank ≥ 2; allocate independent capital per eigenvector.
+3. **Regime-gated baskets (§32)** — gate the §11 integer baskets by §30/§32 regime variables. Cuts drawdowns from regime breaks.
+4. **Lead-lag bot (§28 + §31 + §33)** — react within ticks to lagged predictions from the directed network. Requires bot-class infrastructure.
+5. **Group-shock playbook (§25 + §30)** — when k-of-N tail or DY spillover spikes, deleverage and reverse. Macro-state overlay on top of every spread.
+

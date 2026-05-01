@@ -1,0 +1,11 @@
+section,what,score,metric
+§25 k-of-N tail confluence,k=4 simultaneous tail products,1.1228444456920494,"obs=1, exp=0.89, z=0.1"
+§26 dispersion outlier,OXYGEN_SHAKE_EVENING_BREATH,0.6594436490362621,"ADF p=0.219, half-life=2108.4914168230803"
+§27 Johansen basket,,2.3781898428616985,"ADF p=0.00419, half-life=945.5925128461856"
+§28 Lasso-VAR top edge,OXYGEN_SHAKE_CHOCOLATE → OXYGEN_SHAKE_GARLIC (lag 3),0.011727166590005613,coef=0.0117
+§29 partial-corr MST top,OXYGEN_SHAKE_MORNING_BREATH ↔ OXYGEN_SHAKE_GARLIC,0.012899290123162079,partial_corr=0.013
+§30 top net leader,OXYGEN_SHAKE_CHOCOLATE,0.03,"to=0.1%, from=0.0%"
+§30 top net follower,OXYGEN_SHAKE_GARLIC,0.03,"to=0.1%, from=0.1%"
+§31 PC cross-lead,PC2 → PC1 (lag 1),0.018233213982643062,corr=-0.0182
+§32 regime-best basket,vol=mid,2.9838815566881585,"ADF p=0.00104, n=10183, hl=345.67886788951125"
+§33 trade-burst lead,OXYGEN_SHAKE_MINT → OXYGEN_SHAKE_CHOCOLATE,1.0,max rate-corr=1.000
